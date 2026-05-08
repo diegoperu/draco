@@ -108,7 +108,7 @@ sudo pacman -S tar openssl zstd libnewt
 
 ```bash
 # Clona il repo
-git clone https://github.com/USERNAME/draco.git
+git clone https://github.com/diegoperu/draco.git
 cd draco
 
 # Oppure scarica ed estrai l'archivio
