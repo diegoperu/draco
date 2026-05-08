@@ -1,0 +1,250 @@
+DRACO(1)                         User Commands                        DRACO(1)
+
+NAME
+       draco - Dotfile & Runtime Archive and Configuration Orchestrator
+
+SYNOPSIS
+       draco [OPTIONS] [COMMAND] [ARG]
+
+DESCRIPTION
+       DRACO (Dotfile & Runtime Archive and Configuration Orchestrator) is a
+       portable, encrypted backup system for Linux workstations. It backs up
+       dotfiles, shell configurations, SSH and GPG keys, desktop environment
+       personalizations (KDE and GNOME), installed software manifests, and
+       generates a reinstall script to reproduce the entire software
+       environment on a new machine.
+
+       DRACO is designed for power users who reinstall Linux frequently,
+       switch between machines, or want a reproducible workstation state. It
+       is NOT a general-purpose data backup tool: it explicitly excludes user
+       data directories (Downloads, Documents, etc.) and focuses solely on
+       configurations and software metadata.
+
+       DRACO can be launched with a full-color Terminal User Interface (TUI)
+       or driven entirely from the command line, making it suitable for both
+       interactive use and automation via systemd user timers or cron jobs.
+
+   Supported Distributions
+       * Fedora 42 and later
+       * Debian 12 (Bookworm) and later
+       * Ubuntu 24.04 LTS and later (and derivatives)
+       * Arch Linux and derivatives (Manjaro, EndeavourOS, Garuda)
+
+   Supported Desktop Environments
+       * KDE Plasma (full support: Konsole profiles, Spaceship prompt, color
+         schemes, Plasma themes, Aurorae decorations, global shortcuts)
+       * GNOME (dconf settings export/import, extensions, GTK themes)
+       * Other DEs: dotfiles and SSH/GPG backed up; DE settings skipped
+
+   Encryption
+       All backups are encrypted with AES-256-CBC using OpenSSL with PBKDF2
+       key derivation (600,000 iterations). The password is never stored on
+       disk.
+
+   Compression
+       Archives are compressed with zstd (level 6 by default) before
+       encryption. If zstd is unavailable, DRACO falls back to gzip.
+
+   Deduplication
+       After creating a new backup, DRACO computes a SHA-256 hash of the
+       encrypted archive and compares it to the previous backup. If the
+       hashes match (no changes), the new archive is discarded and replaced
+       with a symlink to the previous one.
+
+   Known Limitations
+       * Monitor/display configuration is excluded from restore
+       * KDE Activities are not backed up
+       * Flatpak config is partially backed up (overrides only)
+       * Wayland-specific input remapping may not be fully captured
+       * Reinstall script: packages renamed/removed since backup may fail
+       * npm, pip, snap lists are best-effort only
+
+COMMANDS
+       backup
+              Run a backup immediately. Detects distro and DE, collects
+              dotfiles and configs, exports KDE/GNOME settings, generates
+              software manifest and reinstall script, creates a single
+              encrypted compressed archive. Deduplication and retention are
+              applied automatically.
+
+       restore [BACKUP_ID]
+              Restore a backup. If BACKUP_ID is omitted, shows interactive
+              selection. Checks for DE mismatch (KDE->GNOME or vice versa):
+              if detected, shows a prominent warning and skips DE-specific
+              settings. Existing files are moved to a timestamped pre-restore
+              backup directory before overwriting.
+
+       list   List all available backups with ID, size, and creation date.
+              Also shows total storage used.
+
+       log [BACKUP_ID]
+              Show the log for a specific backup, including backed-up paths
+              and diff summary vs previous backup. If BACKUP_ID is omitted,
+              shows the most recent backup's log.
+
+       delete BACKUP_ID
+              Delete a specific backup and its metadata. Prompts for
+              confirmation. Use 'draco list' to obtain valid IDs.
+
+       config Interactive configuration wizard (CLI mode). Sets backup
+              directory, compression, retention policy, TUI theme, and other
+              options.
+
+       schedule [SUBCOMMAND]
+              Manage automatic backup scheduling.
+
+              schedule install
+                     Interactive installer for automatic scheduling.
+                     Detects available methods (systemd user timer, cron),
+                     prompts for frequency and time.
+
+              schedule remove
+                     Remove the installed automatic backup schedule.
+
+              schedule status
+                     Show current scheduling status and next run time.
+
+       status Show current DRACO configuration summary.
+
+OPTIONS
+       -c, --config FILE
+              Use an alternate configuration file.
+
+       -p, --password PASSWORD
+              Provide the encryption password on the command line.
+              Prefer DRACO_PASSWORD env var for automation.
+
+       -q, --quiet
+              Suppress all output except errors. For cron/systemd use.
+
+       -v, --verbose
+              Enable verbose/debug output.
+
+       --no-color
+              Disable color output.
+
+       --version
+              Print DRACO version and exit.
+
+       -h, --help
+              Show usage summary and exit.
+
+CONFIGURATION
+       Config file: ~/.config/draco/draco.conf
+       Format: KEY=VALUE (created automatically on first run)
+
+       DRACO_BACKUP_DIR       Backup destination directory (required)
+       DRACO_ENCRYPTION_ALGO  Cipher, default: aes-256-cbc
+       DRACO_COMPRESSION      zstd (default) | gzip | bzip2 | xz
+       DRACO_COMPRESSION_LEVEL  1-19, default: 6
+       DRACO_RETENTION_POLICY   all | daily | weekly | monthly | smart
+       DRACO_RETENTION_KEEP_DAILY    Default: 7
+       DRACO_RETENTION_KEEP_WEEKLY   Default: 4
+       DRACO_RETENTION_KEEP_MONTHLY  Default: 12
+       DRACO_RETENTION_KEEP_YEARLY   Default: 3
+       DRACO_SCHEDULE_TYPE    systemd | cron | none
+       DRACO_SCHEDULE_FREQ    hourly | daily | weekly | monthly
+       DRACO_SCHEDULE_TIME    HH:MM, default: 02:00
+       DRACO_TUI_THEME        default | blue | anthropic | eva01 | matrix
+
+ENVIRONMENT
+       DRACO_PASSWORD    Encryption password (no prompt when set)
+       DRACO_CONFIG      Override config file path
+       DRACO_BACKUP_DIR  Override backup directory (highest priority)
+       DRACO_LOG_LEVEL   0=DEBUG 1=INFO 2=WARN 3=ERROR
+
+FILES
+       ~/.config/draco/draco.conf
+              Main configuration file.
+
+       ~/.local/share/draco/logs/
+              Session log files.
+
+       $DRACO_BACKUP_DIR/draco-YYYYMMDD-HHMMSS.tar.zst.enc
+              Encrypted backup archives. Symlinks = deduplicated backups.
+
+       $DRACO_BACKUP_DIR/.meta/YYYYMMDD-HHMMSS.meta
+              Per-backup metadata (hash, distro, DE, size, date).
+
+       $DRACO_BACKUP_DIR/.meta/YYYYMMDD-HHMMSS.log
+              Human-readable backup log.
+
+       ~/.config/systemd/user/draco-backup.{service,timer}
+              Systemd user units (created by 'draco schedule install').
+
+TUI THEMES
+       default     Plain black and white
+       blue        Classic blue and white sysadmin style
+       anthropic   Coral/red on dark (Anthropic brand)
+       eva01       Purple and green on black (Evangelion Unit-01)
+       matrix      Green on black (The Matrix)
+
+RETENTION POLICIES
+       all      Keep all backups. Disk grows indefinitely.
+       daily    Keep last DRACO_RETENTION_KEEP_DAILY backups.
+       weekly   Keep last DRACO_RETENTION_KEEP_WEEKLY backups.
+       monthly  Keep last DRACO_RETENTION_KEEP_MONTHLY backups.
+       smart    Keep N daily + 1/week for N weeks + 1/month for N months
+                + 1/year for N years. Most space-efficient for long term.
+
+EXAMPLES
+       Run a one-shot backup:
+              draco backup
+
+       Restore most recent backup interactively:
+              draco restore
+
+       Restore specific backup:
+              draco restore 20260508-143022
+
+       List all backups:
+              draco list
+
+       View log for last backup:
+              draco log
+
+       View log for specific backup:
+              draco log 20260508-143022
+
+       Delete a backup:
+              draco delete 20260101-120000
+
+       Install daily schedule at 02:00:
+              draco schedule install
+
+       Run with password from environment (no prompt):
+              DRACO_PASSWORD=secret draco backup --quiet
+
+       Use alternate config:
+              draco --config /mnt/usb/draco.conf backup
+
+       Launch TUI:
+              draco
+
+SECURITY NOTES
+       SSH private keys, GPG keyrings, and other sensitive files are included
+       in the backup. The encryption password is the sole protection. Use a
+       strong password (minimum 12 characters recommended).
+
+       NEVER store the password in draco.conf. Use DRACO_PASSWORD env var.
+
+       For systemd user timer automation, store password in
+       ~/.config/environment.d/draco.conf (mode 600):
+              DRACO_PASSWORD=your_strong_password
+
+       The backup directory should have permissions 700.
+
+DEPENDENCIES
+       Required:  bash (4.0+), tar, openssl, sha256sum, find, grep, sed,
+                  awk, date
+       Recommended: zstd, whiptail or dialog
+       Optional:  dnf, apt, pacman, zypper, flatpak, snap, pip3, npm
+
+LICENSE
+       GNU General Public License version 3.
+       See LICENSE file or https://www.gnu.org/licenses/gpl-3.0.html
+
+SEE ALSO
+       tar(1), openssl(1), systemctl(1), crontab(5), dconf(1)
+
+DRACO 1.0.0                      2026-05-08                          DRACO(1)
