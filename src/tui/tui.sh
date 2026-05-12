@@ -10,23 +10,7 @@ draco_tui_detect() {
     elif command -v dialog &>/dev/null; then
         _DRACO_TUI_BIN="dialog"
     else
-        echo ""
-        echo "DRACO v${DRACO_VERSION}"
-        echo "═══════════════════════════════════════════════════"
-        echo "  TUI non disponibile: whiptail o dialog richiesti."
-        echo ""
-        echo "  Installa con:"
-        echo "    Fedora:         sudo dnf install newt"
-        echo "    Debian/Ubuntu:  sudo apt install whiptail"
-        echo "    Arch:           sudo pacman -S libnewt"
-        echo ""
-        echo "  Oppure usa la modalità CLI:"
-        echo "    draco backup"
-        echo "    draco restore"
-        echo "    draco list"
-        echo "    draco --help"
-        echo "═══════════════════════════════════════════════════"
-        exit 1
+        draco_fatal "TUI requires 'whiptail' (package: newt / libnewt) or 'dialog'. Neither found."
     fi
 }
 

@@ -3,26 +3,18 @@
 # GNU GPL v3 - See LICENSE
 
 # ─── Color definitions ────────────────────────────────────────────────────────
-C_RESET=""
-C_RED=""
-C_GREEN=""
-C_YELLOW=""
-C_BLUE=""
-C_CYAN=""
-C_MAGENTA=""
-C_BOLD=""
-C_DIM=""
-
 _draco_colors_init() {
-    # Safe under set -euo pipefail: no compound conditionals at top level
-    if [[ "${DRACO_NO_COLOR:-0}" -eq 1 ]]; then
-        return 0
-    fi
-
-    local has_tty=0
-    { [[ -t 1 ]] && has_tty=1; } || true
-
-    if [[ "$has_tty" -eq 1 || "${DRACO_FORCE_COLOR:-0}" -eq 1 ]]; then
+    if [[ "${DRACO_NO_COLOR:-0}" -eq 1 ]] || [[ ! -t 1 && "${DRACO_FORCE_COLOR:-0}" -eq 0 ]]; then
+        C_RESET=""
+        C_RED=""
+        C_GREEN=""
+        C_YELLOW=""
+        C_BLUE=""
+        C_CYAN=""
+        C_MAGENTA=""
+        C_BOLD=""
+        C_DIM=""
+    else
         C_RESET="\033[0m"
         C_RED="\033[0;31m"
         C_GREEN="\033[0;32m"
@@ -33,23 +25,21 @@ _draco_colors_init() {
         C_BOLD="\033[1m"
         C_DIM="\033[2m"
     fi
-    return 0
 }
 
-_draco_colors_init || true
+_draco_colors_init
 
 # ─── Log levels ───────────────────────────────────────────────────────────────
 # 0=DEBUG 1=INFO 2=WARN 3=ERROR
 DRACO_LOG_LEVEL="${DRACO_LOG_LEVEL:-1}"
 
 draco_log_init() {
-    local log_dir="${DRACO_LOG_DIR:-${HOME}/.local/share/draco/logs}"
-    mkdir -p "$log_dir" 2>/dev/null || true
-    DRACO_SESSION_LOG="${log_dir}/draco-$(date +%Y%m%d-%H%M%S).log"
+    mkdir -p "$DRACO_LOG_DIR"
+    DRACO_SESSION_LOG="${DRACO_LOG_DIR}/draco-$(date +%Y%m%d-%H%M%S).log"
     export DRACO_SESSION_LOG
 
-    [[ "${DRACO_VERBOSE:-0}" -eq 1 ]] && DRACO_LOG_LEVEL=0 || true
-    [[ "${DRACO_QUIET:-0}"   -eq 1 ]] && DRACO_LOG_LEVEL=3 || true
+    [[ "${DRACO_VERBOSE:-0}" -eq 1 ]] && DRACO_LOG_LEVEL=0
+    [[ "${DRACO_QUIET:-0}" -eq 1 ]]   && DRACO_LOG_LEVEL=3
 }
 
 _draco_log() {
@@ -130,6 +120,7 @@ draco_backup_log_show() {
 draco_backup_show_log() {
     local backup_id="${1:-}"
     if [[ -z "$backup_id" ]]; then
+        # Show last backup log
         backup_id="$(draco_get_last_backup_id)"
     fi
     draco_backup_log_show "$backup_id"
