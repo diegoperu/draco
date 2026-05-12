@@ -40,8 +40,6 @@ fi
 
 $SUDO mkdir -p "$DRACO_TARGET_DIR"
 $SUDO cp -r "${DRACO_DIR}/." "$DRACO_TARGET_DIR/"
-$SUDO chmod +x "$DRACO_TARGET_DIR/draco"
-$SUDO find "$DRACO_TARGET_DIR/src" -name "*.sh" -exec chmod +x {} \;
 
 # Create wrapper symlink/script
 DRACO_BIN="${DRACO_INSTALL_DIR}/draco"

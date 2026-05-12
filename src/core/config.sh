@@ -310,26 +310,20 @@ draco_config_wizard() {
 
 # ─── Status ───────────────────────────────────────────────────────────────────
 draco_status() {
-    draco_detect_distro 2>/dev/null || true
-    draco_detect_de     2>/dev/null || true
-
     local last_backup
     last_backup="$(draco_get_last_backup_id 2>/dev/null || echo 'none')"
     local total_size
     total_size="$(draco_backup_total_size 2>/dev/null || echo 'unknown')"
-    local sched_installed="no"
-    draco_scheduler_is_installed 2>/dev/null && sched_installed="yes"
 
     cat <<EOF
 DRACO v${DRACO_VERSION} Status
 ═══════════════════════════════
 Config file    : ${DRACO_CONFIG_FILE}
-Backup dir     : ${DRACO_BACKUP_DIR:-(not set)}
+Backup dir     : ${DRACO_BACKUP_DIR:-'(not set)'}
 Last backup    : ${last_backup}
 Total size     : ${total_size}
-DE detected    : ${DRACO_DE:-(unknown)}
-Distro         : ${DRACO_DISTRO:-(unknown)}
-Schedule       : ${DRACO_SCHEDULE_TYPE:-none} (installed: ${sched_installed})
+DE detected    : ${DRACO_DE:-'(unknown)'}
+Schedule       : ${DRACO_SCHEDULE_TYPE:-'none'}
 Retention      : ${DRACO_RETENTION_POLICY}
 Theme          : ${DRACO_TUI_THEME}
 EOF
