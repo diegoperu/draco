@@ -1,0 +1,489 @@
+.TH DRACO 1 "2026-05-08" "DRACO 1.0.0" "User Commands"
+.SH NAME
+draco \- Dotfile & Runtime Archive and Configuration Orchestrator
+.SH SYNOPSIS
+.B draco
+[\fIOPTIONS\fR] [\fICOMMAND\fR] [\fIARG\fR]
+.SH DESCRIPTION
+.B DRACO
+(Dotfile & Runtime Archive and Configuration Orchestrator) is a portable,
+encrypted backup system for Linux workstations. It backs up dotfiles,
+shell configurations, SSH and GPG keys, desktop environment
+personalizations (KDE and GNOME), installed software manifests, and
+generates a reinstall script to reproduce the entire software environment
+on a new machine.
+
+DRACO is designed for power users who reinstall Linux frequently, switch
+between machines, or want a reproducible workstation state. It is
+\fBnot\fR a general-purpose data backup tool: it explicitly excludes
+user data directories (Downloads, Documents, etc.) and focuses solely on
+configurations and software metadata.
+
+DRACO can be launched with a full-color Terminal User Interface (TUI) or
+driven entirely from the command line, making it suitable for both
+interactive use and automation via systemd user timers or cron jobs.
+
+.SS Supported Distributions
+.IP \(bu 4
+Fedora 42 and later
+.IP \(bu 4
+Debian 12 (Bookworm) and later
+.IP \(bu 4
+Ubuntu 24.04 LTS and later (and derivatives: Kubuntu, Xubuntu, Pop!_OS, etc.)
+.IP \(bu 4
+Arch Linux and derivatives (Manjaro, EndeavourOS, Garuda)
+
+.SS Supported Desktop Environments
+.IP \(bu 4
+KDE Plasma (full support: Konsole profiles, Spaceship prompt, color schemes,
+Plasma themes, Aurorae decorations, global shortcuts)
+.IP \(bu 4
+GNOME (dconf settings export/import, extensions, GTK themes)
+.IP \(bu 4
+Other DEs: dotfiles and SSH/GPG backed up; DE-specific settings skipped
+
+.SS Encryption
+All backups are encrypted with
+.B AES-256-CBC
+using OpenSSL with PBKDF2 key derivation (600,000 iterations). This
+provides strong protection for sensitive files such as SSH private keys
+and GPG keyrings. The password is never stored on disk.
+
+.SS Compression
+Archives are compressed with
+.B zstd
+(level 6 by default) before encryption. If zstd is unavailable, DRACO
+falls back to gzip automatically.
+
+.SS Deduplication
+After creating a new backup, DRACO computes a SHA-256 hash of the
+encrypted archive and compares it to the previous backup. If the hashes
+match (no changes detected), the new archive is discarded and a symlink
+to the previous one is created, saving disk space without losing the
+version history entry.
+
+.SS Known Limitations
+.IP \(bu 4
+Monitor and display configuration (resolution, arrangement, DPI) is
+\fBexcluded\fR from restore to avoid conflicts when restoring to a
+different hardware setup.
+.IP \(bu 4
+KDE Activities are not backed up.
+.IP \(bu 4
+Flatpak configuration is partially backed up (only overrides, not
+per-application data).
+.IP \(bu 4
+Wayland-specific input remapping (libinput gestures outside DE) may not
+be fully captured.
+.IP \(bu 4
+The reinstall script installs packages by name; packages that have been
+renamed or removed from repositories since the backup will fail silently
+(with \fB|| true\fR).
+.IP \(bu 4
+npm, pip, and snap package lists are included as best-effort only.
+
+.SH COMMANDS
+.TP
+.B backup
+Run a backup immediately. DRACO detects the current distro and desktop
+environment, collects dotfiles and configuration paths, exports KDE or
+GNOME settings, generates a software manifest and reinstall script, then
+creates a single encrypted compressed archive. If the resulting archive
+is identical (SHA-256) to the previous backup, it is replaced with a
+symlink (deduplication). Retention policy is applied after each backup.
+
+.TP
+.B restore [\fIBACKUP_ID\fR]
+Restore a backup. If
+.I BACKUP_ID
+is omitted, an interactive selection menu is displayed. DRACO checks
+whether the backup was created on a different desktop environment than
+the current one. If a mismatch is detected (e.g. backup from KDE,
+restoring on GNOME), a prominent warning is shown and DE-specific
+settings are skipped. All other configs are restored normally.
+Existing files are moved to a timestamped pre-restore backup directory
+before being overwritten.
+
+.TP
+.B list
+List all available backups with their ID, size, and creation date.
+Also displays the total storage used by all backups.
+
+.TP
+.B log [\fIBACKUP_ID\fR]
+Show the log for a specific backup. The log includes the list of backed-up
+paths, the distro and DE at backup time, and a diff summary vs the
+previous backup. If
+.I BACKUP_ID
+is omitted, the log for the most recent backup is shown.
+
+.TP
+.B delete \fIBACKUP_ID\fR
+Delete a specific backup and its associated metadata. Prompts for
+confirmation before deleting. Does not delete symlinked (deduplicated)
+targets unless explicitly specified. Use
+.B draco list
+to obtain valid backup IDs.
+
+.TP
+.B config
+Launch the interactive configuration wizard in CLI mode. Allows setting
+the backup destination directory, compression level, retention policy,
+TUI theme, and other options. Settings are saved to the DRACO config
+file.
+
+.TP
+.B schedule [\fISUBCOMMAND\fR]
+Manage the automatic backup schedule.
+
+.RS
+.TP
+.B schedule install
+Interactive installer for automatic scheduling. Detects available methods
+(systemd user timer, cron) and prompts for frequency (hourly, daily,
+weekly, monthly) and time. Saves the schedule choice to the config file.
+
+.TP
+.B schedule remove
+Remove the installed automatic backup schedule (both systemd and cron
+entries, if present).
+
+.TP
+.B schedule status
+Show the current scheduling status, next run time (if systemd), and the
+cron expression (if cron).
+.RE
+
+.TP
+.B status
+Show a summary of the current DRACO configuration: backup directory,
+last backup ID, total storage used, detected DE, schedule type, retention
+policy, and active TUI theme.
+
+.SH OPTIONS
+.TP
+.BR \-c ", " \-\-config " " \fIFILE\fR
+Use an alternate configuration file instead of the default
+.IR ~/.config/draco/draco.conf .
+
+.TP
+.BR \-p ", " \-\-password " " \fIPASSWORD\fR
+Provide the encryption password on the command line. This is convenient
+for scripting but exposes the password in the process list. Prefer the
+.B DRACO_PASSWORD
+environment variable for automated use.
+
+.TP
+.BR \-q ", " \-\-quiet
+Suppress all output except errors. Suitable for cron and systemd service
+use.
+
+.TP
+.BR \-v ", " \-\-verbose
+Enable verbose/debug output. Logs every file path considered, skipped,
+or included.
+
+.TP
+.B \-\-no\-color
+Disable color output. Useful when piping output or using DRACO in
+environments without color support.
+
+.TP
+.B \-\-tui
+Force TUI mode even when a command is specified. Ignored: TUI mode is
+the default when no command is given.
+
+.TP
+.B \-\-version
+Print DRACO version and exit.
+
+.TP
+.BR \-h ", " \-\-help
+Show a brief usage summary and exit.
+
+.SH CONFIGURATION
+DRACO reads its configuration from
+.B ~/.config/draco/draco.conf
+(or the path in the
+.B DRACO_CONFIG
+environment variable). The file uses a simple
+.B KEY=VALUE
+format and is created automatically on first run or via
+.BR "draco config" .
+
+.SS Configuration Keys
+.TP
+.B DRACO_BACKUP_DIR
+Absolute path to the backup destination directory. Required. DRACO
+will not run a backup until this is set.
+
+.TP
+.B DRACO_ENCRYPTION_ALGO
+OpenSSL cipher to use. Default:
+.BR aes-256-cbc .
+Do not change unless you have a specific reason.
+
+.TP
+.B DRACO_COMPRESSION
+Compression algorithm. One of:
+.BR zstd " (default), " gzip ", " bzip2 ", " xz .
+
+.TP
+.B DRACO_COMPRESSION_LEVEL
+Compression level (1-19 for zstd, 1-9 for gzip/bzip2/xz). Default: 6.
+
+.TP
+.B DRACO_RETENTION_POLICY
+Retention policy. One of:
+.BR all " (keep everything), " daily ", " weekly ", " monthly ", " smart .
+Default:
+.BR all .
+
+.TP
+.B DRACO_RETENTION_KEEP_DAILY
+Number of daily backups to keep (used by
+.B daily
+and
+.B smart
+policies). Default: 7.
+
+.TP
+.B DRACO_RETENTION_KEEP_WEEKLY
+Number of weekly backups to keep. Default: 4.
+
+.TP
+.B DRACO_RETENTION_KEEP_MONTHLY
+Number of monthly backups to keep. Default: 12.
+
+.TP
+.B DRACO_RETENTION_KEEP_YEARLY
+Number of yearly backups to keep (smart policy only). Default: 3.
+
+.TP
+.B DRACO_SCHEDULE_TYPE
+Scheduling backend: one of
+.BR systemd ", " cron ", " none .
+
+.TP
+.B DRACO_SCHEDULE_FREQ
+Backup frequency:
+.BR hourly ", " daily ", " weekly ", " monthly .
+
+.TP
+.B DRACO_SCHEDULE_TIME
+Time of day for non-hourly schedules, in HH:MM format. Default:
+.BR 02:00 .
+
+.TP
+.B DRACO_TUI_THEME
+TUI color theme. One of:
+.BR default ", " blue ", " anthropic ", " eva01 ", " matrix .
+
+.SH ENVIRONMENT
+.TP
+.B DRACO_PASSWORD
+Encryption password. When set, DRACO will not prompt for a password.
+Recommended for automated/scheduled backups. Set in
+.B ~/.config/environment.d/draco.conf
+for systemd user services, or at the top of the crontab for cron jobs.
+
+.TP
+.B DRACO_CONFIG
+Override the config file path.
+
+.TP
+.B DRACO_BACKUP_DIR
+Override the backup directory (highest priority, overrides config file).
+
+.TP
+.B DRACO_LOG_LEVEL
+Log verbosity: 0=DEBUG, 1=INFO (default), 2=WARN, 3=ERROR.
+
+.TP
+.B DRACO_NO_COLOR
+Set to
+.B 1
+to disable color output (same as
+.BR \-\-no\-color ).
+
+.TP
+.B XDG_SESSION_DESKTOP / DESKTOP_SESSION
+Used by DRACO to detect the running desktop environment.
+
+.SH FILES
+.TP
+.I ~/.config/draco/draco.conf
+Main configuration file.
+
+.TP
+.I ~/.local/share/draco/logs/
+Session log files (one per DRACO invocation).
+
+.TP
+.I $DRACO_BACKUP_DIR/draco-YYYYMMDD-HHMMSS.tar.zst.enc
+Encrypted backup archives. Symlinks indicate deduplicated backups.
+
+.TP
+.I $DRACO_BACKUP_DIR/.meta/YYYYMMDD-HHMMSS.meta
+Metadata file for each backup (hash, distro, DE, size, date).
+
+.TP
+.I $DRACO_BACKUP_DIR/.meta/YYYYMMDD-HHMMSS.log
+Human-readable log for each backup (paths backed up, diff vs previous).
+
+.TP
+.I ~/.config/systemd/user/draco-backup.service
+.I ~/.config/systemd/user/draco-backup.timer
+Systemd user units (created by
+.BR "draco schedule install" ).
+
+.SH TUI THEMES
+DRACO's TUI supports five selectable color themes:
+
+.TP
+.B default
+Plain black and white. Maximum compatibility with any terminal.
+
+.TP
+.B blue
+Classic blue and white sysadmin style.
+
+.TP
+.B anthropic
+Coral/red on dark background, inspired by Anthropic's brand colors.
+
+.TP
+.B eva01
+Purple and green on black, inspired by Evangelion Unit-01.
+
+.TP
+.B matrix
+Green on black, inspired by The Matrix.
+
+.SH RETENTION POLICIES
+.TP
+.B all
+All backups are kept. No automatic deletion. Disk usage grows
+indefinitely.
+
+.TP
+.B daily
+Keep the last
+.B DRACO_RETENTION_KEEP_DAILY
+backups, delete the rest.
+
+.TP
+.B weekly
+Keep the last
+.B DRACO_RETENTION_KEEP_WEEKLY
+backups.
+
+.TP
+.B monthly
+Keep the last
+.B DRACO_RETENTION_KEEP_MONTHLY
+backups.
+
+.TP
+.B smart
+Keep: last N daily, last one per week for N weeks, last one per month
+for N months, last one per year for N years. The most space-efficient
+policy for long-term use.
+
+.SH EXAMPLES
+.TP
+Run a one-shot backup:
+.B draco backup
+
+.TP
+Restore the most recent backup interactively:
+.B draco restore
+
+.TP
+Restore a specific backup:
+.B draco restore 20260508-143022
+
+.TP
+List all backups:
+.B draco list
+
+.TP
+View the log for the last backup:
+.B draco log
+
+.TP
+View the log for a specific backup:
+.B draco log 20260508-143022
+
+.TP
+Delete a specific backup:
+.B draco delete 20260101-120000
+
+.TP
+Install daily automatic backup at 02:00 via systemd:
+.B draco schedule install
+
+.TP
+Run with password from environment (no prompt):
+.B DRACO_PASSWORD=secret draco backup --quiet
+
+.TP
+Use an alternate config file:
+.B draco --config /mnt/usb/draco.conf backup
+
+.SH SECURITY NOTES
+SSH private keys, GPG keyrings, and other sensitive files are included
+in the backup. The encryption password is the only protection for these
+files. Use a strong password (minimum 12 characters recommended).
+
+Never store the password in the config file
+.RI ( ~/.config/draco/draco.conf ).
+Use the
+.B DRACO_PASSWORD
+environment variable or enter it interactively.
+
+For systemd user timer automated backups, store the password in
+.I ~/.config/environment.d/draco.conf
+with mode 600:
+
+.RS
+.nf
+DRACO_PASSWORD=your_strong_password
+.fi
+.RE
+
+The backup directory should have restrictive permissions (700) to
+prevent other users from accessing encrypted archives.
+
+.SH DEPENDENCIES
+.TP
+Required (present in virtually all Linux distributions):
+.BR bash " (4.0+), " tar ", " openssl ", " sha256sum ", " find ", " grep ", " sed ", " awk ", " date
+
+.TP
+Optional but strongly recommended:
+.BR zstd " (compression), " whiptail " or " dialog " (TUI)"
+
+.TP
+Package detection (used only if present):
+.BR dnf ", " apt ", " pacman ", " zypper ", " flatpak ", " snap ", " pip3 ", " npm
+
+.SH AUTHOR
+DRACO was designed and implemented as a portable Linux workstation
+backup solution. Licensed under the GNU General Public License v3.
+
+.SH LICENSE
+GNU General Public License version 3.
+.br
+See
+.I LICENSE
+file or
+.UR https://www.gnu.org/licenses/gpl-3.0.html
+.UE .
+
+.SH SEE ALSO
+.BR tar (1),
+.BR openssl (1),
+.BR systemctl (1),
+.BR crontab (5),
+.BR dconf (1)

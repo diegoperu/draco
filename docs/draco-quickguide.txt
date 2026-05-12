@@ -1,0 +1,211 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║   DRACO  -  Quick Guide  -  v1.0.0                               ║
+║   Dotfile & Runtime Archive and Configuration Orchestrator       ║
+║                                                                  ║
+║   Fedora 42+  |  Debian 12+  |  Ubuntu 24.04+  |  Arch          ║
+║   Encryption: AES-256-CBC + PBKDF2  |  Compression: zstd        ║
+║   License: GNU GPL v3                                            ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 1. WHAT DRACO BACKS UP (and what it doesn't)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+YES (backed up):
+  ✓ Dotfiles: .bashrc, .zshrc, .gitconfig, .vimrc, .tmux.conf, etc.
+  ✓ SSH keys and config (~/.ssh/)
+  ✓ GPG keyring (~/.gnupg/)
+  ✓ KDE: Konsole profiles, Spaceship theme, color schemes,
+         Plasma themes, Aurorae decorations, global shortcuts
+  ✓ GNOME: dconf settings, extensions, GTK themes
+  ✓ Editor configs (VS Code, Neovim, etc.)
+  ✓ Terminal emulator configs (Alacritty, Kitty, WezTerm)
+  ✓ User-installed fonts and icons
+  ✓ Installed software list (dnf/apt/pacman/zypper + flatpak/snap)
+  ✓ Auto-generated reinstall script
+
+NO (not backed up):
+  ✗ Downloads, Documents, Pictures, Music, Videos
+  ✗ ~/.cache/
+  ✗ Monitor/display configuration (hardware-specific)
+  ✗ KDE Activities
+  ✗ ~/.local/share/Steam or large app data
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 2. INSTALLATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Dependencies:
+  Fedora:         sudo dnf install tar openssl zstd newt
+  Debian/Ubuntu:  sudo apt install tar openssl zstd whiptail
+  Arch:           sudo pacman -S tar openssl zstd libnewt
+
+Install DRACO:
+  tar xzf draco-step1.tar.gz
+  cd draco
+  bash install.sh
+  # Choose: user (~/.local/bin) or system (/usr/local/bin)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 3. FIRST RUN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  draco
+
+  First run prompts for:
+    1. Backup destination directory (e.g. /mnt/backup or ~/draco-backups)
+    2. Whether to install automatic scheduling
+
+  ⚠ NEVER store your password in draco.conf.
+    Use: export DRACO_PASSWORD=yourpassword
+    Or:  echo 'DRACO_PASSWORD=yourpassword' > ~/.config/environment.d/draco.conf
+         chmod 600 ~/.config/environment.d/draco.conf
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 4. COMMAND REFERENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  draco                       Launch TUI (interactive mode)
+  draco backup                Run backup now
+  draco restore               Restore (interactive selection)
+  draco restore <ID>          Restore specific backup by ID
+  draco list                  List all backups + sizes + dates
+  draco log                   View log for last backup
+  draco log <ID>              View log for specific backup
+  draco delete <ID>           Delete a backup (with confirmation)
+  draco schedule install      Install automatic schedule
+  draco schedule remove       Remove automatic schedule
+  draco schedule status       Show schedule + next run time
+  draco config                Configuration wizard
+  draco status                Show config summary
+
+  Backup IDs look like: 20260508-143022  (YYYYMMDD-HHMMSS)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 5. OPTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  -c FILE   --config FILE      Use alternate config file
+  -p PWD    --password PWD     Set password on CLI
+  -q        --quiet            Suppress non-error output (for cron)
+  -v        --verbose          Debug output
+            --no-color         Disable color output
+            --version          Print version
+  -h        --help             Show usage
+
+  Environment variables:
+    DRACO_PASSWORD=xxx         Encryption password (no prompt)
+    DRACO_CONFIG=path          Override config file path
+    DRACO_BACKUP_DIR=path      Override backup directory
+    DRACO_LOG_LEVEL=0-3        0=DEBUG 1=INFO 2=WARN 3=ERROR
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 6. AUTOMATED BACKUPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Systemd user timer (recommended):
+  draco schedule install
+  # Choose: systemd, daily, 02:00
+
+  # Store password for unattended use:
+  mkdir -p ~/.config/environment.d
+  echo 'DRACO_PASSWORD=yourpassword' > ~/.config/environment.d/draco.conf
+  chmod 600 ~/.config/environment.d/draco.conf
+
+Cron:
+  draco schedule install
+  # Choose: cron
+
+  # Or manually:
+  crontab -e
+  DRACO_PASSWORD=yourpassword
+  0 2 * * * /home/user/.local/bin/draco backup -q >> ~/.local/share/draco/logs/cron.log 2>&1
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 7. RESTORE WORKFLOW (new machine or fresh install)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Step 1: Install DRACO on new machine (see Section 2)
+  Step 2: Copy backup directory or mount backup storage
+  Step 3: Set backup dir: draco config  (or DRACO_BACKUP_DIR=...)
+  Step 4: draco restore     (select backup from list)
+  Step 5: Enter encryption password
+  Step 6: Run reinstall script:
+            bash ~/.local/share/draco/restore-<ID>/reinstall.sh
+  Step 7: Restart your session
+
+  ⚠ KDE → GNOME or GNOME → KDE:
+    DRACO detects the mismatch and shows a warning.
+    DE-specific settings are SKIPPED automatically.
+    All other configs (dotfiles, SSH, etc.) are restored normally.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 8. RETENTION POLICIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  all       Keep everything. Disk grows indefinitely. (default)
+  daily     Keep last N daily backups.
+  weekly    Keep last N weekly backups.
+  monthly   Keep last N monthly backups.
+  smart     N daily + 1/week for N weeks + 1/month for N months
+            + 1/year for N years. Best for long-term use.
+
+  Configure: draco config  →  Retention policy
+  Or in draco.conf:
+    DRACO_RETENTION_POLICY=smart
+    DRACO_RETENTION_KEEP_DAILY=7
+    DRACO_RETENTION_KEEP_WEEKLY=4
+    DRACO_RETENTION_KEEP_MONTHLY=12
+    DRACO_RETENTION_KEEP_YEARLY=3
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 9. TUI THEMES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  default     Plain black and white (max compatibility)
+  blue        Classic blue/white sysadmin style
+  anthropic   Coral/red on dark (Anthropic brand colors)
+  eva01       Purple and green on black (Evangelion Unit-01)
+  matrix      Green on black (The Matrix)
+
+  Set: draco config → TUI theme
+  Or:  DRACO_TUI_THEME=matrix draco
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 10. KEY FILE LOCATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ~/.config/draco/draco.conf              Main config file
+  ~/.local/share/draco/logs/              Session logs
+  $BACKUP_DIR/draco-YYYYMMDD-HHMMSS.*.enc  Encrypted archives
+  $BACKUP_DIR/.meta/*.meta                Per-backup metadata
+  $BACKUP_DIR/.meta/*.log                 Per-backup log/diff
+  ~/.config/systemd/user/draco-backup.*  Systemd units
+  ~/.local/share/draco/restore-<ID>/reinstall.sh  Reinstall script
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 11. SECURITY CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✓ Use a strong password (12+ chars). It protects your SSH keys.
+  ✓ NEVER store password in draco.conf.
+  ✓ chmod 700 $DRACO_BACKUP_DIR
+  ✓ For systemd: store password in ~/.config/environment.d/draco.conf (chmod 600)
+  ✓ Back up your password somewhere safe. Without it: unrecoverable.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 12. KNOWN LIMITATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  • No user data backup (Downloads, Documents, media). By design.
+  • Monitor/display config excluded from restore (hardware-specific).
+  • KDE Activities not backed up.
+  • Flatpak: only overrides, not per-app data.
+  • Reinstall script: packages renamed since backup may fail silently.
+  • npm/pip/snap lists are best-effort only.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  DRACO v1.0.0  |  GNU GPL v3  |  AES-256-CBC + PBKDF2(600k iter)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

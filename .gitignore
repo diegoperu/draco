@@ -1,0 +1,27 @@
+# DRACO - .gitignore
+
+# Encrypted backup archives
+*.enc
+
+# Compiled/generated
+*.pyc
+__pycache__/
+
+# Logs
+*.log
+
+# Backup metadata (user-specific)
+.meta/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# PDF generation script (not needed by end users)
+docs/gen_quickguide.py
