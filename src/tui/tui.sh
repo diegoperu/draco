@@ -202,6 +202,7 @@ draco_tui_checklist() {
 draco_tui_main() {
     draco_tui_detect
     draco_tui_apply_theme
+    clear
 
     while true; do
         local choice
@@ -217,7 +218,7 @@ draco_tui_main() {
             "SCHEDULE" "Manage automatic schedule" \
             "CONFIG"   "Configure DRACO settings" \
             "ABOUT"    "About DRACO" \
-        2>/dev/null)" || { clear; exit 0; }
+        )" || { clear; exit 0; }
 
         case "$choice" in
             BACKUP)   draco_tui_backup ;;
