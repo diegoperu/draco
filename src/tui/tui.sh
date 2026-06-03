@@ -18,30 +18,30 @@ draco_tui_detect() {
 # 256-color indices bypass terminal palette remapping — works on all terminals.
 # \033[38;5;Nm = fg, \033[48;5;Nm = bg
 
-DRACO_TUI_BG=0  DRACO_TUI_FG=15  DRACO_TUI_ACCENT=7
-DRACO_TUI_SEL_BG=7  DRACO_TUI_SEL_FG=0  DRACO_TUI_NAME="ghost"
+DRACO_TUI_BG=232  DRACO_TUI_FG=255  DRACO_TUI_ACCENT=250
+DRACO_TUI_SEL_BG=255  DRACO_TUI_SEL_FG=232  DRACO_TUI_NAME="ghost"
 
 draco_tui_apply_theme() {
     local theme="${DRACO_TUI_THEME:-ghost}"
     case "$theme" in
         ghost|default)
-            DRACO_TUI_BG=0; DRACO_TUI_FG=15; DRACO_TUI_ACCENT=7
-            DRACO_TUI_SEL_BG=7;  DRACO_TUI_SEL_FG=0;  DRACO_TUI_NAME="ghost"  ;;
+            DRACO_TUI_BG=232; DRACO_TUI_FG=255; DRACO_TUI_ACCENT=250
+            DRACO_TUI_SEL_BG=255; DRACO_TUI_SEL_FG=232; DRACO_TUI_NAME="ghost"  ;;
         blood|anthropic)
-            DRACO_TUI_BG=0; DRACO_TUI_FG=9;  DRACO_TUI_ACCENT=1
-            DRACO_TUI_SEL_BG=9;  DRACO_TUI_SEL_FG=0;  DRACO_TUI_NAME="blood"  ;;
+            DRACO_TUI_BG=232; DRACO_TUI_FG=196; DRACO_TUI_ACCENT=160
+            DRACO_TUI_SEL_BG=196; DRACO_TUI_SEL_FG=232; DRACO_TUI_NAME="blood"  ;;
         acid)
-            DRACO_TUI_BG=0; DRACO_TUI_FG=11; DRACO_TUI_ACCENT=3
-            DRACO_TUI_SEL_BG=11; DRACO_TUI_SEL_FG=0;  DRACO_TUI_NAME="acid"   ;;
+            DRACO_TUI_BG=232; DRACO_TUI_FG=226; DRACO_TUI_ACCENT=220
+            DRACO_TUI_SEL_BG=226; DRACO_TUI_SEL_FG=232; DRACO_TUI_NAME="acid"   ;;
         matrix|eva01)
-            DRACO_TUI_BG=0; DRACO_TUI_FG=10; DRACO_TUI_ACCENT=2
-            DRACO_TUI_SEL_BG=10; DRACO_TUI_SEL_FG=0;  DRACO_TUI_NAME="matrix" ;;
+            DRACO_TUI_BG=232; DRACO_TUI_FG=46;  DRACO_TUI_ACCENT=34
+            DRACO_TUI_SEL_BG=46;  DRACO_TUI_SEL_FG=232; DRACO_TUI_NAME="matrix" ;;
         void|blue)
-            DRACO_TUI_BG=0; DRACO_TUI_FG=14; DRACO_TUI_ACCENT=6
-            DRACO_TUI_SEL_BG=14; DRACO_TUI_SEL_FG=0;  DRACO_TUI_NAME="void"   ;;
+            DRACO_TUI_BG=232; DRACO_TUI_FG=51;  DRACO_TUI_ACCENT=38
+            DRACO_TUI_SEL_BG=51;  DRACO_TUI_SEL_FG=232; DRACO_TUI_NAME="void"   ;;
         *)
-            DRACO_TUI_BG=0; DRACO_TUI_FG=15; DRACO_TUI_ACCENT=7
-            DRACO_TUI_SEL_BG=7;  DRACO_TUI_SEL_FG=0;  DRACO_TUI_NAME="ghost"  ;;
+            DRACO_TUI_BG=232; DRACO_TUI_FG=255; DRACO_TUI_ACCENT=250
+            DRACO_TUI_SEL_BG=255; DRACO_TUI_SEL_FG=232; DRACO_TUI_NAME="ghost"  ;;
     esac
 }
 
