@@ -86,20 +86,26 @@ bash >= 4.0   tar   openssl   sha256sum   find   grep   sed   awk
 
 ```
 zstd      # compressione (fallback: gzip)
-whiptail  # TUI (pacchetto: newt / libnewt)
+dialog    # TUI (raccomandato: colori corretti su tutti i terminali)
+whiptail  # TUI alternativa (pacchetto: newt / libnewt)
 ```
+
+> **Nota:** `dialog` è preferito a `whiptail` perché su KDE Konsole (e in generale
+> con terminali con palette personalizzata) `whiptail`/newt ignora i colori
+> configurati e usa quelli del tema terminale. `dialog` con DIALOGRC funziona
+> correttamente su qualsiasi terminale.
 
 Installazione dipendenze:
 
 ```bash
 # Fedora
-sudo dnf install tar openssl zstd newt
+sudo dnf install tar openssl zstd dialog
 
 # Debian / Ubuntu / Kubuntu
-sudo apt install tar openssl zstd whiptail
+sudo apt install tar openssl zstd dialog
 
 # Arch
-sudo pacman -S tar openssl zstd libnewt
+sudo pacman -S tar openssl zstd dialog
 ```
 
 ---
@@ -344,7 +350,7 @@ draco/
     ├── scheduler/
     │   └── scheduler.sh         # Systemd user timer + cron
     └── tui/
-        └── tui.sh               # TUI whiptail/dialog, 5 temi
+        └── tui.sh               # TUI dialog/whiptail, 5 temi
 ```
 
 ---

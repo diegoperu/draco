@@ -1,35 +1,193 @@
 #!/usr/bin/env bash
-# DRACO - tui/tui.sh: Terminal UI using whiptail/dialog with themes
+# DRACO - tui/tui.sh: Terminal UI using dialog/whiptail with themes
 # GNU GPL v3 - See LICENSE
 
 # ─── TUI backend detection ────────────────────────────────────────────────────
+# dialog preferred: DIALOGRC gives correct colors regardless of terminal theme
+# whiptail fallback: NEWT_COLORS may be overridden by terminal palette (e.g. KDE Konsole)
 _DRACO_TUI_BIN=""
 draco_tui_detect() {
-    if command -v whiptail &>/dev/null; then
-        _DRACO_TUI_BIN="whiptail"
-    elif command -v dialog &>/dev/null; then
+    if command -v dialog &>/dev/null; then
         _DRACO_TUI_BIN="dialog"
+    elif command -v whiptail &>/dev/null; then
+        _DRACO_TUI_BIN="whiptail"
     else
-        draco_fatal "TUI requires 'whiptail' (package: newt / libnewt) or 'dialog'. Neither found."
+        draco_fatal "TUI richiede 'dialog' (raccomandato) o 'whiptail'. Installa con:
+  Fedora:       sudo dnf install dialog
+  Debian/Ubuntu: sudo apt install dialog
+  Arch:         sudo pacman -S dialog"
     fi
 }
 
 # ─── Theme definitions ────────────────────────────────────────────────────────
-# NEWT_COLORS     : color names (fallback, may be overridden by terminal theme)
-# NEWT_COLORS_CPP : ANSI palette indices 0-15 (respected regardless of terminal theme)
-#   0=black 1=red 2=green 3=yellow 4=blue 5=magenta 6=cyan 7=white
-#   8=bright_black 9=bright_red 10=bright_green 11=bright_yellow
-#   12=bright_blue 13=bright_magenta 14=bright_cyan 15=bright_white
+# dialog (preferred): scrive DIALOGRC — colori indipendenti dal tema terminale
+# whiptail (fallback): usa NEWT_COLORS — può essere ignorato da KDE Konsole
 
-draco_tui_apply_theme() {
-    local theme="${DRACO_TUI_THEME:-default}"
-
-    unset NEWT_COLORS
-    unset NEWT_COLORS_CPP
-
+_draco_tui_dialogrc() {
+    local theme="$1"
+    local file="$2"
     case "$theme" in
         default)
-            # Bright white on black - clean neutral
+            cat > "$file" <<'EOF'
+use_colors = ON
+screen_color = (WHITE,BLACK,OFF)
+dialog_color = (WHITE,BLACK,OFF)
+title_color = (WHITE,BLACK,ON)
+border_color = (WHITE,BLACK,ON)
+button_active_color = (BLACK,WHITE,ON)
+button_inactive_color = (WHITE,BLACK,OFF)
+button_key_active_color = (BLACK,WHITE,ON)
+button_key_inactive_color = (WHITE,BLACK,OFF)
+button_label_active_color = (BLACK,WHITE,ON)
+button_label_inactive_color = (WHITE,BLACK,OFF)
+inputbox_color = (WHITE,BLACK,OFF)
+inputbox_border_color = (WHITE,BLACK,ON)
+menubox_color = (WHITE,BLACK,OFF)
+menubox_border_color = (WHITE,BLACK,ON)
+item_color = (WHITE,BLACK,OFF)
+item_selected_color = (BLACK,WHITE,ON)
+tag_color = (WHITE,BLACK,ON)
+tag_selected_color = (BLACK,WHITE,ON)
+tag_key_color = (WHITE,BLACK,OFF)
+tag_key_selected_color = (BLACK,WHITE,ON)
+check_color = (WHITE,BLACK,OFF)
+check_selected_color = (BLACK,WHITE,ON)
+uarrow_color = (WHITE,BLACK,ON)
+darrow_color = (WHITE,BLACK,ON)
+shadow_color = (BLACK,BLACK,ON)
+EOF
+            ;;
+        blue)
+            cat > "$file" <<'EOF'
+use_colors = ON
+screen_color = (WHITE,BLUE,ON)
+dialog_color = (WHITE,BLUE,OFF)
+title_color = (WHITE,BLUE,ON)
+border_color = (WHITE,BLUE,ON)
+button_active_color = (BLUE,WHITE,ON)
+button_inactive_color = (WHITE,BLUE,OFF)
+button_key_active_color = (BLUE,WHITE,ON)
+button_key_inactive_color = (WHITE,BLUE,OFF)
+button_label_active_color = (BLUE,WHITE,ON)
+button_label_inactive_color = (WHITE,BLUE,OFF)
+inputbox_color = (WHITE,BLUE,OFF)
+inputbox_border_color = (WHITE,BLUE,ON)
+menubox_color = (WHITE,BLUE,OFF)
+menubox_border_color = (WHITE,BLUE,ON)
+item_color = (WHITE,BLUE,OFF)
+item_selected_color = (BLUE,WHITE,ON)
+tag_color = (WHITE,BLUE,ON)
+tag_selected_color = (BLUE,WHITE,ON)
+tag_key_color = (WHITE,BLUE,OFF)
+tag_key_selected_color = (BLUE,WHITE,ON)
+check_color = (WHITE,BLUE,OFF)
+check_selected_color = (BLUE,WHITE,ON)
+uarrow_color = (WHITE,BLUE,ON)
+darrow_color = (WHITE,BLUE,ON)
+shadow_color = (BLACK,BLACK,ON)
+EOF
+            ;;
+        anthropic)
+            cat > "$file" <<'EOF'
+use_colors = ON
+screen_color = (WHITE,BLACK,OFF)
+dialog_color = (WHITE,BLACK,OFF)
+title_color = (RED,BLACK,ON)
+border_color = (RED,BLACK,ON)
+button_active_color = (BLACK,RED,ON)
+button_inactive_color = (WHITE,BLACK,OFF)
+button_key_active_color = (BLACK,RED,ON)
+button_key_inactive_color = (RED,BLACK,OFF)
+button_label_active_color = (BLACK,RED,ON)
+button_label_inactive_color = (WHITE,BLACK,OFF)
+inputbox_color = (WHITE,BLACK,OFF)
+inputbox_border_color = (RED,BLACK,ON)
+menubox_color = (WHITE,BLACK,OFF)
+menubox_border_color = (RED,BLACK,ON)
+item_color = (WHITE,BLACK,OFF)
+item_selected_color = (BLACK,RED,ON)
+tag_color = (RED,BLACK,ON)
+tag_selected_color = (BLACK,RED,ON)
+tag_key_color = (RED,BLACK,OFF)
+tag_key_selected_color = (BLACK,RED,ON)
+check_color = (WHITE,BLACK,OFF)
+check_selected_color = (BLACK,RED,ON)
+uarrow_color = (WHITE,BLACK,ON)
+darrow_color = (WHITE,BLACK,ON)
+shadow_color = (BLACK,BLACK,ON)
+EOF
+            ;;
+        eva01)
+            cat > "$file" <<'EOF'
+use_colors = ON
+screen_color = (GREEN,BLACK,ON)
+dialog_color = (GREEN,BLACK,OFF)
+title_color = (MAGENTA,BLACK,ON)
+border_color = (MAGENTA,BLACK,ON)
+button_active_color = (BLACK,MAGENTA,ON)
+button_inactive_color = (GREEN,BLACK,OFF)
+button_key_active_color = (BLACK,MAGENTA,ON)
+button_key_inactive_color = (MAGENTA,BLACK,OFF)
+button_label_active_color = (BLACK,MAGENTA,ON)
+button_label_inactive_color = (GREEN,BLACK,OFF)
+inputbox_color = (GREEN,BLACK,OFF)
+inputbox_border_color = (MAGENTA,BLACK,ON)
+menubox_color = (GREEN,BLACK,OFF)
+menubox_border_color = (MAGENTA,BLACK,ON)
+item_color = (GREEN,BLACK,OFF)
+item_selected_color = (BLACK,MAGENTA,ON)
+tag_color = (MAGENTA,BLACK,ON)
+tag_selected_color = (BLACK,MAGENTA,ON)
+tag_key_color = (MAGENTA,BLACK,OFF)
+tag_key_selected_color = (BLACK,MAGENTA,ON)
+check_color = (GREEN,BLACK,OFF)
+check_selected_color = (BLACK,MAGENTA,ON)
+uarrow_color = (GREEN,BLACK,ON)
+darrow_color = (GREEN,BLACK,ON)
+shadow_color = (BLACK,BLACK,ON)
+EOF
+            ;;
+        matrix)
+            cat > "$file" <<'EOF'
+use_colors = ON
+screen_color = (GREEN,BLACK,ON)
+dialog_color = (GREEN,BLACK,OFF)
+title_color = (GREEN,BLACK,ON)
+border_color = (GREEN,BLACK,ON)
+button_active_color = (BLACK,GREEN,ON)
+button_inactive_color = (GREEN,BLACK,OFF)
+button_key_active_color = (BLACK,GREEN,ON)
+button_key_inactive_color = (GREEN,BLACK,OFF)
+button_label_active_color = (BLACK,GREEN,ON)
+button_label_inactive_color = (GREEN,BLACK,OFF)
+inputbox_color = (GREEN,BLACK,OFF)
+inputbox_border_color = (GREEN,BLACK,ON)
+searchbox_color = (GREEN,BLACK,OFF)
+searchbox_title_color = (GREEN,BLACK,ON)
+searchbox_border_color = (GREEN,BLACK,ON)
+position_indicator_color = (GREEN,BLACK,ON)
+menubox_color = (GREEN,BLACK,OFF)
+menubox_border_color = (GREEN,BLACK,ON)
+item_color = (GREEN,BLACK,OFF)
+item_selected_color = (BLACK,GREEN,ON)
+tag_color = (GREEN,BLACK,ON)
+tag_selected_color = (BLACK,GREEN,ON)
+tag_key_color = (GREEN,BLACK,OFF)
+tag_key_selected_color = (BLACK,GREEN,ON)
+check_color = (GREEN,BLACK,OFF)
+check_selected_color = (BLACK,GREEN,ON)
+uarrow_color = (GREEN,BLACK,ON)
+darrow_color = (GREEN,BLACK,ON)
+shadow_color = (BLACK,BLACK,ON)
+EOF
+            ;;
+    esac
+}
+
+_draco_tui_newt_colors() {
+    local theme="$1"
+    case "$theme" in
+        default)
             export NEWT_COLORS='
 root=white,black
 border=white,black
@@ -51,31 +209,8 @@ acttextbox=black,white
 helpline=black,white
 roottext=white,black
 '
-            export NEWT_COLORS_CPP='
-root=15,0
-border=15,0
-window=15,0
-shadow=8,0
-title=15,0
-button=0,7
-actbutton=0,7
-checkbox=15,0
-actcheckbox=0,7
-entry=15,0
-label=15,0
-listbox=15,0
-actlistbox=0,15
-sellistbox=0,7
-actsellistbox=0,15
-textbox=15,0
-acttextbox=0,15
-helpline=0,7
-roottext=15,0
-'
             ;;
-
         blue)
-            # Classic sysadmin blue
             export NEWT_COLORS='
 root=white,blue
 border=white,blue
@@ -97,31 +232,8 @@ acttextbox=black,white
 helpline=black,white
 roottext=white,blue
 '
-            export NEWT_COLORS_CPP='
-root=15,4
-border=15,4
-window=15,4
-shadow=0,4
-title=15,4
-button=0,15
-actbutton=15,4
-checkbox=15,4
-actcheckbox=0,15
-entry=15,4
-label=15,4
-listbox=15,4
-actlistbox=0,15
-sellistbox=0,15
-actsellistbox=0,15
-textbox=15,4
-acttextbox=0,15
-helpline=0,15
-roottext=15,4
-'
             ;;
-
         anthropic)
-            # Anthropic brand: coral accent on dark
             export NEWT_COLORS='
 root=white,black
 border=red,black
@@ -143,31 +255,8 @@ acttextbox=black,red
 helpline=white,black
 roottext=red,black
 '
-            export NEWT_COLORS_CPP='
-root=15,0
-border=9,0
-window=15,0
-shadow=0,0
-title=9,0
-button=0,1
-actbutton=15,0
-checkbox=15,0
-actcheckbox=0,9
-entry=15,0
-label=9,0
-listbox=15,0
-actlistbox=0,9
-sellistbox=0,9
-actsellistbox=0,9
-textbox=15,0
-acttextbox=0,9
-helpline=15,0
-roottext=9,0
-'
             ;;
-
         eva01)
-            # Evangelion Unit 01 - phosphorescent green on black, magenta accents
             export NEWT_COLORS='
 root=green,black
 border=magenta,black
@@ -189,31 +278,8 @@ acttextbox=black,magenta
 helpline=green,black
 roottext=magenta,black
 '
-            export NEWT_COLORS_CPP='
-root=10,0
-border=13,0
-window=10,0
-shadow=0,0
-title=13,0
-button=0,5
-actbutton=10,0
-checkbox=10,0
-actcheckbox=0,13
-entry=10,0
-label=13,0
-listbox=10,0
-actlistbox=0,13
-sellistbox=10,5
-actsellistbox=0,13
-textbox=10,0
-acttextbox=0,13
-helpline=10,0
-roottext=13,0
-'
             ;;
-
         matrix)
-            # The Matrix - bright green on black only
             export NEWT_COLORS='
 root=green,black
 border=green,black
@@ -235,29 +301,25 @@ acttextbox=black,green
 helpline=black,green
 roottext=green,black
 '
-            export NEWT_COLORS_CPP='
-root=10,0
-border=10,0
-window=10,0
-shadow=0,0
-title=10,0
-button=0,2
-actbutton=10,0
-checkbox=10,0
-actcheckbox=0,10
-entry=10,0
-label=10,0
-listbox=10,0
-actlistbox=0,10
-sellistbox=0,10
-actsellistbox=0,10
-textbox=10,0
-acttextbox=0,10
-helpline=0,10
-roottext=10,0
-'
             ;;
     esac
+}
+
+draco_tui_apply_theme() {
+    local theme="${DRACO_TUI_THEME:-default}"
+
+    unset NEWT_COLORS
+    unset NEWT_COLORS_CPP
+    unset DIALOGRC
+
+    if [[ "${_DRACO_TUI_BIN:-}" == "dialog" ]]; then
+        local rc_dir="${XDG_CACHE_HOME:-$HOME/.cache}/draco"
+        mkdir -p "$rc_dir"
+        _draco_tui_dialogrc "$theme" "${rc_dir}/dialogrc"
+        export DIALOGRC="${rc_dir}/dialogrc"
+    else
+        _draco_tui_newt_colors "$theme"
+    fi
 }
 
 # ─── Wrapper functions ────────────────────────────────────────────────────────
@@ -313,8 +375,13 @@ draco_tui_textbox() {
     local file="$2"
     local h="${3:-20}"
     local w="${4:-78}"
-    "$_DRACO_TUI_BIN" --title "$title" --scrolltext --textbox "$file" "$h" "$w" \
-        3>&1 1>&2 2>&3 || true
+    if [[ "${_DRACO_TUI_BIN:-}" == "whiptail" ]]; then
+        "$_DRACO_TUI_BIN" --title "$title" --scrolltext --textbox "$file" "$h" "$w" \
+            3>&1 1>&2 2>&3 || true
+    else
+        "$_DRACO_TUI_BIN" --title "$title" --textbox "$file" "$h" "$w" \
+            3>&1 1>&2 2>&3 || true
+    fi
 }
 
 draco_tui_checklist() {
