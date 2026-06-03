@@ -10,7 +10,11 @@ NON è un backup dati utente — solo configurazioni e software manifest.
 - Struttura: `draco` (entry point) + `src/{core,backup,restore,distro,scheduler,tui}/`
 - Cifratura: AES-256-CBC via OpenSSL, PBKDF2 600k iterazioni
 - Compressione: zstd (fallback gzip)
-- TUI: bash nativa con ANSI 256-color — bypassa whiptail/NEWT_COLORS/palette terminale; disegna su /dev/tty con \033[38;5;Nm (fg) e \033[48;5;Nm (bg); whiptail/dialog usati SOLO per inputbox e passwordbox
+- TUI: bash nativa con ANSI 256-color — disegna su /dev/tty con `\033[38;5;Nm` (fg) e `\033[48;5;Nm` (bg)
+  - Range 0-15 rimappati da KDE Konsole → MAI usarli nei temi
+  - Range 16-231 (cubo RGB) e 232-255 (grayscale) sono fissi → sempre usare questi
+  - Temi: ghost(255/232) blood(196/232) acid(226/232) matrix(46/232) void(51/232)
+  - whiptail/dialog usati SOLO per inputbox/passwordbox (colori irrilevanti lì)
 
 ## HOW — Regole di sviluppo
 
@@ -42,8 +46,9 @@ NON è un backup dati utente — solo configurazioni e software manifest.
 ### Bug noti risolti — NON reintrodurre
 - `_draco_colors_init`: usare `{ [[ -t 1 ]] && has_tty=1; } || true` — mai `[[ ! -t 1 && ... ]]`
 - `install.sh`: dopo `cp -r`, sempre `chmod +x draco` e `find src -name '*.sh' -exec chmod +x {}`
-- `draco_log_init`: fallback `${DRACO_LOG_DIR:-$HOME/.local/share/draco/logs}`
+- `draco_log_init`: aggiungere `|| true` alla fine — l'ultima riga `[[ ... ]] && VAR=x` ritorna 1 con set -e se la condizione è falsa, causando exit silenzioso prima della TUI
 - `draco_status`: chiamare `draco_detect_distro` e `draco_detect_de` prima di stampare
+- TUI temi: MAI usare colori ANSI 0-15 (rimappati da Konsole) — usare solo range 16-255
 
 ## Distro target
 Fedora 42+, Debian 12+, Ubuntu 24.04+, Arch Linux

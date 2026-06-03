@@ -54,7 +54,7 @@ Non è un backup dei tuoi dati. È il backup della tua **identità da sysadmin**
 - **GNOME completo** — export/import dconf, estensioni, temi GTK
 - **Reinstall script** — generato automaticamente per dnf / apt / pacman / zypper + flatpak + snap + pip + npm
 - **Retention configurabile** — `all` / `daily` / `weekly` / `monthly` / `smart`
-- **TUI colorata** — 5 temi selezionabili (default, blue, anthropic, eva01, matrix)
+- **TUI bash nativa** — 5 temi 256-color senza dipendenze (ghost, blood, acid, matrix, void); colori fissi indipendenti dal tema terminale
 - **Automazione** — systemd user timer o cron, installazione interattiva
 - **DE mismatch detection** — ripristino da KDE su GNOME (e viceversa) con warning automatico e skip delle config DE-specifiche
 - **Portabile** — una cartella, zero compilazione, funziona su qualsiasi Linux con bash 4+
@@ -86,26 +86,25 @@ bash >= 4.0   tar   openssl   sha256sum   find   grep   sed   awk
 
 ```
 zstd      # compressione (fallback: gzip)
-dialog    # TUI (raccomandato: colori corretti su tutti i terminali)
-whiptail  # TUI alternativa (pacchetto: newt / libnewt)
+whiptail  # input testuale nella TUI (opzionale; fallback: read nativo)
 ```
 
-> **Nota:** `dialog` è preferito a `whiptail` perché su KDE Konsole (e in generale
-> con terminali con palette personalizzata) `whiptail`/newt ignora i colori
-> configurati e usa quelli del tema terminale. `dialog` con DIALOGRC funziona
-> correttamente su qualsiasi terminale.
+> **Nota TUI:** L'interfaccia grafica è scritta in bash puro con ANSI 256-color.
+> Non dipende da whiptail o dialog per i colori — usa i range 16-255 che sono
+> fissi su tutti i terminali 256color (non rimappabili da KDE Konsole o altri).
+> whiptail/dialog vengono usati solo per i campi di input testo e password.
 
 Installazione dipendenze:
 
 ```bash
 # Fedora
-sudo dnf install tar openssl zstd dialog
+sudo dnf install tar openssl zstd newt
 
 # Debian / Ubuntu / Kubuntu
-sudo apt install tar openssl zstd dialog
+sudo apt install tar openssl zstd whiptail
 
 # Arch
-sudo pacman -S tar openssl zstd dialog
+sudo pacman -S tar openssl zstd libnewt
 ```
 
 ---
@@ -186,19 +185,25 @@ draco
 
 ### Temi disponibili
 
-| Tema | Palette | Ispirazione |
-|------|---------|-------------|
-| `default` | Bianco/nero | Massima compatibilità |
-| `blue` | Blu/bianco | Sysadmin classico |
-| `anthropic` | Corallo su scuro | Brand Anthropic |
-| `eva01` | Viola/verde su nero | Evangelion Unit-01 |
-| `matrix` | Verde su nero | The Matrix |
+La TUI usa ANSI 256-color (range 16-255, non rimappabili dal terminale).
+
+| Tema | Colore testo | Ispirazione |
+|------|-------------|-------------|
+| `ghost` | Bianco brillante su nero | Default, massima leggibilità |
+| `blood` | Rosso brillante su nero | Stile hacker |
+| `acid` | Giallo brillante su nero | High visibility |
+| `matrix` | Verde brillante su nero | The Matrix |
+| `void` | Ciano brillante su nero | Cyberpunk |
+
+Alias retrocompatibili: `default`→ghost, `blue`→void, `anthropic`→blood, `eva01`→matrix.
 
 ```bash
-# Cambia tema
-draco config   # → TUI theme
-# oppure
+# Cambia tema dalla TUI
+draco config   # → Theme
+
+# Override da riga di comando
 DRACO_TUI_THEME=matrix draco
+DRACO_TUI_THEME=void draco
 ```
 
 ---
@@ -350,7 +355,7 @@ draco/
     ├── scheduler/
     │   └── scheduler.sh         # Systemd user timer + cron
     └── tui/
-        └── tui.sh               # TUI dialog/whiptail, 5 temi
+        └── tui.sh               # TUI bash nativa, 5 temi 256-color
 ```
 
 ---
