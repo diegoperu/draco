@@ -15,20 +15,67 @@ draco_tui_detect() {
 }
 
 # ─── Theme definitions ────────────────────────────────────────────────────────
-# whiptail uses NEWT_COLORS env var
-# dialog uses --colors and terminal escape codes (limited)
+# NEWT_COLORS     : color names (fallback, may be overridden by terminal theme)
+# NEWT_COLORS_CPP : ANSI palette indices 0-15 (respected regardless of terminal theme)
+#   0=black 1=red 2=green 3=yellow 4=blue 5=magenta 6=cyan 7=white
+#   8=bright_black 9=bright_red 10=bright_green 11=bright_yellow
+#   12=bright_blue 13=bright_magenta 14=bright_cyan 15=bright_white
 
 draco_tui_apply_theme() {
     local theme="${DRACO_TUI_THEME:-default}"
 
+    unset NEWT_COLORS
+    unset NEWT_COLORS_CPP
+
     case "$theme" in
         default)
-            # Plain white/black - no color env
-            unset NEWT_COLORS
+            # Bright white on black - clean neutral
+            export NEWT_COLORS='
+root=white,black
+border=white,black
+window=white,black
+shadow=black,black
+title=white,black
+button=black,white
+actbutton=black,white
+checkbox=white,black
+actcheckbox=black,white
+entry=white,black
+label=white,black
+listbox=white,black
+actlistbox=black,white
+sellistbox=black,white
+actsellistbox=black,white
+textbox=white,black
+acttextbox=black,white
+helpline=black,white
+roottext=white,black
+'
+            export NEWT_COLORS_CPP='
+root=15,0
+border=15,0
+window=15,0
+shadow=8,0
+title=15,0
+button=0,7
+actbutton=0,7
+checkbox=15,0
+actcheckbox=0,7
+entry=15,0
+label=15,0
+listbox=15,0
+actlistbox=0,15
+sellistbox=0,7
+actsellistbox=0,15
+textbox=15,0
+acttextbox=0,15
+helpline=0,7
+roottext=15,0
+'
             ;;
 
         blue)
-            # Blue and white - classic sysadmin
+            # Classic sysadmin blue
             export NEWT_COLORS='
 root=white,blue
 border=white,blue
@@ -50,11 +97,31 @@ acttextbox=black,white
 helpline=black,white
 roottext=white,blue
 '
+            export NEWT_COLORS_CPP='
+root=15,4
+border=15,4
+window=15,4
+shadow=0,4
+title=15,4
+button=0,15
+actbutton=15,4
+checkbox=15,4
+actcheckbox=0,15
+entry=15,4
+label=15,4
+listbox=15,4
+actlistbox=0,15
+sellistbox=0,15
+actsellistbox=0,15
+textbox=15,4
+acttextbox=0,15
+helpline=0,15
+roottext=15,4
+'
             ;;
 
         anthropic)
-            # Anthropic brand: coral/cream on dark
-            # Closest approximation with terminal colors
+            # Anthropic brand: coral accent on dark
             export NEWT_COLORS='
 root=white,black
 border=red,black
@@ -62,7 +129,7 @@ window=white,black
 shadow=black,black
 title=red,black
 button=black,red
-actbutton=black,red
+actbutton=white,black
 checkbox=white,black
 actcheckbox=black,red
 entry=white,black
@@ -76,6 +143,27 @@ acttextbox=black,red
 helpline=white,black
 roottext=red,black
 '
+            export NEWT_COLORS_CPP='
+root=15,0
+border=9,0
+window=15,0
+shadow=0,0
+title=9,0
+button=0,1
+actbutton=15,0
+checkbox=15,0
+actcheckbox=0,9
+entry=15,0
+label=9,0
+listbox=15,0
+actlistbox=0,9
+sellistbox=0,9
+actsellistbox=0,9
+textbox=15,0
+acttextbox=0,9
+helpline=15,0
+roottext=9,0
+'
             ;;
 
         eva01)
@@ -86,8 +174,8 @@ border=magenta,black
 window=green,black
 shadow=black,black
 title=magenta,black
-button=magenta,black
-actbutton=black,magenta
+button=black,magenta
+actbutton=green,black
 checkbox=green,black
 actcheckbox=black,magenta
 entry=green,black
@@ -101,10 +189,31 @@ acttextbox=black,magenta
 helpline=green,black
 roottext=magenta,black
 '
+            export NEWT_COLORS_CPP='
+root=10,0
+border=13,0
+window=10,0
+shadow=0,0
+title=13,0
+button=0,5
+actbutton=10,0
+checkbox=10,0
+actcheckbox=0,13
+entry=10,0
+label=13,0
+listbox=10,0
+actlistbox=0,13
+sellistbox=10,5
+actsellistbox=0,13
+textbox=10,0
+acttextbox=0,13
+helpline=10,0
+roottext=13,0
+'
             ;;
 
         matrix)
-            # The Matrix - green on black, zero other colors
+            # The Matrix - bright green on black only
             export NEWT_COLORS='
 root=green,black
 border=green,black
@@ -112,7 +221,7 @@ window=green,black
 shadow=black,black
 title=green,black
 button=black,green
-actbutton=black,green
+actbutton=green,black
 checkbox=green,black
 actcheckbox=black,green
 entry=green,black
@@ -125,6 +234,27 @@ textbox=green,black
 acttextbox=black,green
 helpline=black,green
 roottext=green,black
+'
+            export NEWT_COLORS_CPP='
+root=10,0
+border=10,0
+window=10,0
+shadow=0,0
+title=10,0
+button=0,2
+actbutton=10,0
+checkbox=10,0
+actcheckbox=0,10
+entry=10,0
+label=10,0
+listbox=10,0
+actlistbox=0,10
+sellistbox=0,10
+actsellistbox=0,10
+textbox=10,0
+acttextbox=0,10
+helpline=0,10
+roottext=10,0
 '
             ;;
     esac
