@@ -38,8 +38,8 @@ draco_log_init() {
     DRACO_SESSION_LOG="${DRACO_LOG_DIR}/draco-$(date +%Y%m%d-%H%M%S).log"
     export DRACO_SESSION_LOG
 
-    [[ "${DRACO_VERBOSE:-0}" -eq 1 ]] && DRACO_LOG_LEVEL=0
-    [[ "${DRACO_QUIET:-0}" -eq 1 ]]   && DRACO_LOG_LEVEL=3
+    [[ "${DRACO_VERBOSE:-0}" -eq 1 ]] && DRACO_LOG_LEVEL=0 || true
+    [[ "${DRACO_QUIET:-0}" -eq 1 ]]   && DRACO_LOG_LEVEL=3 || true
 }
 
 _draco_log() {

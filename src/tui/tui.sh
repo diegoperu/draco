@@ -43,8 +43,8 @@ entry=white,blue
 label=white,blue
 listbox=white,blue
 actlistbox=black,white
-sellistbox=white,black
-actsellistbox=white,black
+sellistbox=black,white
+actsellistbox=black,white
 textbox=white,blue
 acttextbox=black,white
 helpline=black,white
@@ -62,15 +62,15 @@ window=white,black
 shadow=black,black
 title=red,black
 button=black,red
-actbutton=white,red
+actbutton=black,red
 checkbox=white,black
 actcheckbox=black,red
 entry=white,black
 label=red,black
 listbox=white,black
 actlistbox=black,red
-sellistbox=white,red
-actsellistbox=white,red
+sellistbox=black,red
+actsellistbox=black,red
 textbox=white,black
 acttextbox=black,red
 helpline=white,black
@@ -79,15 +79,15 @@ roottext=red,black
             ;;
 
         eva01)
-            # Evangelion Unit 01 - purple and green on black
+            # Evangelion Unit 01 - phosphorescent green on black, magenta accents
             export NEWT_COLORS='
 root=green,black
 border=magenta,black
 window=green,black
 shadow=black,black
 title=magenta,black
-button=black,magenta
-actbutton=green,magenta
+button=magenta,black
+actbutton=black,magenta
 checkbox=green,black
 actcheckbox=black,magenta
 entry=green,black
@@ -95,7 +95,7 @@ label=magenta,black
 listbox=green,black
 actlistbox=black,magenta
 sellistbox=green,magenta
-actsellistbox=green,magenta
+actsellistbox=black,magenta
 textbox=green,black
 acttextbox=black,magenta
 helpline=green,black
@@ -104,7 +104,7 @@ roottext=magenta,black
             ;;
 
         matrix)
-            # The Matrix - green on black
+            # The Matrix - green on black, zero other colors
             export NEWT_COLORS='
 root=green,black
 border=green,black
@@ -119,7 +119,7 @@ entry=green,black
 label=green,black
 listbox=green,black
 actlistbox=black,green
-sellistbox=green,black
+sellistbox=black,green
 actsellistbox=black,green
 textbox=green,black
 acttextbox=black,green
