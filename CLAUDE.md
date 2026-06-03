@@ -10,7 +10,7 @@ NON è un backup dati utente — solo configurazioni e software manifest.
 - Struttura: `draco` (entry point) + `src/{core,backup,restore,distro,scheduler,tui}/`
 - Cifratura: AES-256-CBC via OpenSSL, PBKDF2 600k iterazioni
 - Compressione: zstd (fallback gzip)
-- TUI: whiptail preferito su dialog, 5 temi — NEWT_COLORS ignorato da KDE Konsole con palette custom; soluzione: OSC 4 (`printf '\033]4;N;#RRGGBB\007'`) forza palette ANSI standard prima di whiptail, ripristina con OSC 104 (`printf '\033]104\007'`) all'uscita
+- TUI: bash nativa con ANSI 256-color — bypassa whiptail/NEWT_COLORS/palette terminale; disegna su /dev/tty con \033[38;5;Nm (fg) e \033[48;5;Nm (bg); whiptail/dialog usati SOLO per inputbox e passwordbox
 
 ## HOW — Regole di sviluppo
 
@@ -29,7 +29,7 @@ NON è un backup dati utente — solo configurazioni e software manifest.
 - `src/backup/engine.sh`       — backup engine, KDE/GNOME, retention, diff
 - `src/restore/engine.sh`      — restore, DE mismatch, pre-restore backup
 - `src/scheduler/scheduler.sh` — systemd user timer + cron
-- `src/tui/tui.sh`             — TUI whiptail/dialog, 5 temi, OSC4 palette reset
+- `src/tui/tui.sh`             — TUI bash nativa, 5 temi 256-color, output su /dev/tty
 
 ### Commit convention (Conventional Commits)
 - `feat:` nuova funzionalità
