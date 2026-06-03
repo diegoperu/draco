@@ -1,215 +1,62 @@
 #!/usr/bin/env bash
-# DRACO - tui/tui.sh: Terminal UI using dialog/whiptail with themes
+# DRACO - tui/tui.sh: Terminal UI using whiptail/dialog with themes
 # GNU GPL v3 - See LICENSE
 
 # ─── TUI backend detection ────────────────────────────────────────────────────
-# dialog preferred: DIALOGRC gives correct colors regardless of terminal theme
-# whiptail fallback: NEWT_COLORS may be overridden by terminal palette (e.g. KDE Konsole)
 _DRACO_TUI_BIN=""
 draco_tui_detect() {
-    if command -v dialog &>/dev/null; then
-        _DRACO_TUI_BIN="dialog"
-    elif command -v whiptail &>/dev/null; then
+    if command -v whiptail &>/dev/null; then
         _DRACO_TUI_BIN="whiptail"
+    elif command -v dialog &>/dev/null; then
+        _DRACO_TUI_BIN="dialog"
     else
-        draco_fatal "TUI richiede 'dialog' (raccomandato) o 'whiptail'. Installa con:
-  Fedora:       sudo dnf install dialog
-  Debian/Ubuntu: sudo apt install dialog
-  Arch:         sudo pacman -S dialog"
+        draco_fatal "TUI requires 'whiptail' (package: newt / libnewt) or 'dialog'. Neither found."
     fi
 }
 
-# ─── Theme definitions ────────────────────────────────────────────────────────
-# dialog (preferred): scrive DIALOGRC — colori indipendenti dal tema terminale
-# whiptail (fallback): usa NEWT_COLORS — può essere ignorato da KDE Konsole
+# ─── Palette management ───────────────────────────────────────────────────────
+# KDE Konsole (e altri terminali con palette custom) rimappano i colori ANSI,
+# rendendo NEWT_COLORS inaffidabile. OSC 4 forza la palette standard prima di
+# whiptail; OSC 104 la ripristina all'uscita dalla TUI.
 
-_draco_tui_dialogrc() {
-    local theme="$1"
-    local file="$2"
-    case "$theme" in
-        default)
-            cat > "$file" <<'EOF'
-use_colors = ON
-screen_color = (WHITE,BLACK,OFF)
-dialog_color = (WHITE,BLACK,OFF)
-title_color = (WHITE,BLACK,ON)
-border_color = (WHITE,BLACK,ON)
-button_active_color = (BLACK,WHITE,ON)
-button_inactive_color = (WHITE,BLACK,OFF)
-button_key_active_color = (BLACK,WHITE,ON)
-button_key_inactive_color = (WHITE,BLACK,OFF)
-button_label_active_color = (BLACK,WHITE,ON)
-button_label_inactive_color = (WHITE,BLACK,OFF)
-inputbox_color = (WHITE,BLACK,OFF)
-inputbox_border_color = (WHITE,BLACK,ON)
-menubox_color = (WHITE,BLACK,OFF)
-menubox_border_color = (WHITE,BLACK,ON)
-item_color = (WHITE,BLACK,OFF)
-item_selected_color = (BLACK,WHITE,ON)
-tag_color = (WHITE,BLACK,ON)
-tag_selected_color = (BLACK,WHITE,ON)
-tag_key_color = (WHITE,BLACK,OFF)
-tag_key_selected_color = (BLACK,WHITE,ON)
-check_color = (WHITE,BLACK,OFF)
-check_selected_color = (BLACK,WHITE,ON)
-uarrow_color = (WHITE,BLACK,ON)
-darrow_color = (WHITE,BLACK,ON)
-shadow_color = (BLACK,BLACK,ON)
-EOF
-            ;;
-        blue)
-            cat > "$file" <<'EOF'
-use_colors = ON
-screen_color = (WHITE,BLUE,ON)
-dialog_color = (WHITE,BLUE,OFF)
-title_color = (WHITE,BLUE,ON)
-border_color = (WHITE,BLUE,ON)
-button_active_color = (BLUE,WHITE,ON)
-button_inactive_color = (WHITE,BLUE,OFF)
-button_key_active_color = (BLUE,WHITE,ON)
-button_key_inactive_color = (WHITE,BLUE,OFF)
-button_label_active_color = (BLUE,WHITE,ON)
-button_label_inactive_color = (WHITE,BLUE,OFF)
-inputbox_color = (WHITE,BLUE,OFF)
-inputbox_border_color = (WHITE,BLUE,ON)
-menubox_color = (WHITE,BLUE,OFF)
-menubox_border_color = (WHITE,BLUE,ON)
-item_color = (WHITE,BLUE,OFF)
-item_selected_color = (BLUE,WHITE,ON)
-tag_color = (WHITE,BLUE,ON)
-tag_selected_color = (BLUE,WHITE,ON)
-tag_key_color = (WHITE,BLUE,OFF)
-tag_key_selected_color = (BLUE,WHITE,ON)
-check_color = (WHITE,BLUE,OFF)
-check_selected_color = (BLUE,WHITE,ON)
-uarrow_color = (WHITE,BLUE,ON)
-darrow_color = (WHITE,BLUE,ON)
-shadow_color = (BLACK,BLACK,ON)
-EOF
-            ;;
-        anthropic)
-            cat > "$file" <<'EOF'
-use_colors = ON
-screen_color = (WHITE,BLACK,OFF)
-dialog_color = (WHITE,BLACK,OFF)
-title_color = (RED,BLACK,ON)
-border_color = (RED,BLACK,ON)
-button_active_color = (BLACK,RED,ON)
-button_inactive_color = (WHITE,BLACK,OFF)
-button_key_active_color = (BLACK,RED,ON)
-button_key_inactive_color = (RED,BLACK,OFF)
-button_label_active_color = (BLACK,RED,ON)
-button_label_inactive_color = (WHITE,BLACK,OFF)
-inputbox_color = (WHITE,BLACK,OFF)
-inputbox_border_color = (RED,BLACK,ON)
-menubox_color = (WHITE,BLACK,OFF)
-menubox_border_color = (RED,BLACK,ON)
-item_color = (WHITE,BLACK,OFF)
-item_selected_color = (BLACK,RED,ON)
-tag_color = (RED,BLACK,ON)
-tag_selected_color = (BLACK,RED,ON)
-tag_key_color = (RED,BLACK,OFF)
-tag_key_selected_color = (BLACK,RED,ON)
-check_color = (WHITE,BLACK,OFF)
-check_selected_color = (BLACK,RED,ON)
-uarrow_color = (WHITE,BLACK,ON)
-darrow_color = (WHITE,BLACK,ON)
-shadow_color = (BLACK,BLACK,ON)
-EOF
-            ;;
-        eva01)
-            cat > "$file" <<'EOF'
-use_colors = ON
-screen_color = (GREEN,BLACK,ON)
-dialog_color = (GREEN,BLACK,OFF)
-title_color = (MAGENTA,BLACK,ON)
-border_color = (MAGENTA,BLACK,ON)
-button_active_color = (BLACK,MAGENTA,ON)
-button_inactive_color = (GREEN,BLACK,OFF)
-button_key_active_color = (BLACK,MAGENTA,ON)
-button_key_inactive_color = (MAGENTA,BLACK,OFF)
-button_label_active_color = (BLACK,MAGENTA,ON)
-button_label_inactive_color = (GREEN,BLACK,OFF)
-inputbox_color = (GREEN,BLACK,OFF)
-inputbox_border_color = (MAGENTA,BLACK,ON)
-menubox_color = (GREEN,BLACK,OFF)
-menubox_border_color = (MAGENTA,BLACK,ON)
-item_color = (GREEN,BLACK,OFF)
-item_selected_color = (BLACK,MAGENTA,ON)
-tag_color = (MAGENTA,BLACK,ON)
-tag_selected_color = (BLACK,MAGENTA,ON)
-tag_key_color = (MAGENTA,BLACK,OFF)
-tag_key_selected_color = (BLACK,MAGENTA,ON)
-check_color = (GREEN,BLACK,OFF)
-check_selected_color = (BLACK,MAGENTA,ON)
-uarrow_color = (GREEN,BLACK,ON)
-darrow_color = (GREEN,BLACK,ON)
-shadow_color = (BLACK,BLACK,ON)
-EOF
-            ;;
-        matrix)
-            cat > "$file" <<'EOF'
-use_colors = ON
-screen_color = (GREEN,BLACK,ON)
-dialog_color = (GREEN,BLACK,OFF)
-title_color = (GREEN,BLACK,ON)
-border_color = (GREEN,BLACK,ON)
-button_active_color = (BLACK,GREEN,ON)
-button_inactive_color = (GREEN,BLACK,OFF)
-button_key_active_color = (BLACK,GREEN,ON)
-button_key_inactive_color = (GREEN,BLACK,OFF)
-button_label_active_color = (BLACK,GREEN,ON)
-button_label_inactive_color = (GREEN,BLACK,OFF)
-inputbox_color = (GREEN,BLACK,OFF)
-inputbox_border_color = (GREEN,BLACK,ON)
-searchbox_color = (GREEN,BLACK,OFF)
-searchbox_title_color = (GREEN,BLACK,ON)
-searchbox_border_color = (GREEN,BLACK,ON)
-position_indicator_color = (GREEN,BLACK,ON)
-menubox_color = (GREEN,BLACK,OFF)
-menubox_border_color = (GREEN,BLACK,ON)
-item_color = (GREEN,BLACK,OFF)
-item_selected_color = (BLACK,GREEN,ON)
-tag_color = (GREEN,BLACK,ON)
-tag_selected_color = (BLACK,GREEN,ON)
-tag_key_color = (GREEN,BLACK,OFF)
-tag_key_selected_color = (BLACK,GREEN,ON)
-check_color = (GREEN,BLACK,OFF)
-check_selected_color = (BLACK,GREEN,ON)
-uarrow_color = (GREEN,BLACK,ON)
-darrow_color = (GREEN,BLACK,ON)
-shadow_color = (BLACK,BLACK,ON)
-EOF
-            ;;
-    esac
+draco_tui_reset_palette() {
+    printf '\033]4;0;#000000\007'   # 0  black
+    printf '\033]4;1;#cc0000\007'   # 1  red
+    printf '\033]4;2;#4e9a06\007'   # 2  green
+    printf '\033]4;3;#c4a000\007'   # 3  yellow
+    printf '\033]4;4;#3465a4\007'   # 4  blue
+    printf '\033]4;5;#75507b\007'   # 5  magenta
+    printf '\033]4;6;#06989a\007'   # 6  cyan
+    printf '\033]4;7;#d3d7cf\007'   # 7  white
+    printf '\033]4;8;#555753\007'   # 8  bright black
+    printf '\033]4;9;#ef2929\007'   # 9  bright red
+    printf '\033]4;10;#8ae234\007'  # 10 bright green
+    printf '\033]4;11;#fce94f\007'  # 11 bright yellow
+    printf '\033]4;12;#729fcf\007'  # 12 bright blue
+    printf '\033]4;13;#ad7fa8\007'  # 13 bright magenta
+    printf '\033]4;14;#34e2e2\007'  # 14 bright cyan
+    printf '\033]4;15;#eeeeec\007'  # 15 bright white
 }
 
-_draco_tui_newt_colors() {
-    local theme="$1"
+draco_tui_restore_palette() {
+    printf '\033]104\007'
+}
+
+# ─── Theme definitions ────────────────────────────────────────────────────────
+
+draco_tui_apply_theme() {
+    local theme="${DRACO_TUI_THEME:-default}"
+
+    unset NEWT_COLORS
+    unset NEWT_COLORS_CPP
+    unset DIALOGRC
+
+    draco_tui_reset_palette
+
     case "$theme" in
         default)
-            export NEWT_COLORS='
-root=white,black
-border=white,black
-window=white,black
-shadow=black,black
-title=white,black
-button=black,white
-actbutton=black,white
-checkbox=white,black
-actcheckbox=black,white
-entry=white,black
-label=white,black
-listbox=white,black
-actlistbox=black,white
-sellistbox=black,white
-actsellistbox=black,white
-textbox=white,black
-acttextbox=black,white
-helpline=black,white
-roottext=white,black
-'
             ;;
+
         blue)
             export NEWT_COLORS='
 root=white,blue
@@ -225,14 +72,15 @@ entry=white,blue
 label=white,blue
 listbox=white,blue
 actlistbox=black,white
-sellistbox=black,white
-actsellistbox=black,white
+sellistbox=white,black
+actsellistbox=white,black
 textbox=white,blue
 acttextbox=black,white
 helpline=black,white
 roottext=white,blue
 '
             ;;
+
         anthropic)
             export NEWT_COLORS='
 root=white,black
@@ -241,21 +89,22 @@ window=white,black
 shadow=black,black
 title=red,black
 button=black,red
-actbutton=white,black
+actbutton=white,red
 checkbox=white,black
 actcheckbox=black,red
 entry=white,black
 label=red,black
 listbox=white,black
 actlistbox=black,red
-sellistbox=black,red
-actsellistbox=black,red
+sellistbox=white,red
+actsellistbox=white,red
 textbox=white,black
 acttextbox=black,red
 helpline=white,black
 roottext=red,black
 '
             ;;
+
         eva01)
             export NEWT_COLORS='
 root=green,black
@@ -264,7 +113,7 @@ window=green,black
 shadow=black,black
 title=magenta,black
 button=black,magenta
-actbutton=green,black
+actbutton=green,magenta
 checkbox=green,black
 actcheckbox=black,magenta
 entry=green,black
@@ -272,13 +121,14 @@ label=magenta,black
 listbox=green,black
 actlistbox=black,magenta
 sellistbox=green,magenta
-actsellistbox=black,magenta
+actsellistbox=green,magenta
 textbox=green,black
 acttextbox=black,magenta
 helpline=green,black
 roottext=magenta,black
 '
             ;;
+
         matrix)
             export NEWT_COLORS='
 root=green,black
@@ -287,14 +137,14 @@ window=green,black
 shadow=black,black
 title=green,black
 button=black,green
-actbutton=green,black
+actbutton=black,green
 checkbox=green,black
 actcheckbox=black,green
 entry=green,black
 label=green,black
 listbox=green,black
 actlistbox=black,green
-sellistbox=black,green
+sellistbox=green,black
 actsellistbox=black,green
 textbox=green,black
 acttextbox=black,green
@@ -303,23 +153,6 @@ roottext=green,black
 '
             ;;
     esac
-}
-
-draco_tui_apply_theme() {
-    local theme="${DRACO_TUI_THEME:-default}"
-
-    unset NEWT_COLORS
-    unset NEWT_COLORS_CPP
-    unset DIALOGRC
-
-    if [[ "${_DRACO_TUI_BIN:-}" == "dialog" ]]; then
-        local rc_dir="${XDG_CACHE_HOME:-$HOME/.cache}/draco"
-        mkdir -p "$rc_dir"
-        _draco_tui_dialogrc "$theme" "${rc_dir}/dialogrc"
-        export DIALOGRC="${rc_dir}/dialogrc"
-    else
-        _draco_tui_newt_colors "$theme"
-    fi
 }
 
 # ─── Wrapper functions ────────────────────────────────────────────────────────
@@ -346,7 +179,6 @@ draco_tui_menu() {
     local w="${4:-70}"
     local list_h="${5:-10}"
     shift 5
-    # Remaining: item pairs
     "$_DRACO_TUI_BIN" --title "$title" --menu "$prompt" "$h" "$w" "$list_h" \
         "$@" 3>&1 1>&2 2>&3
 }
@@ -399,6 +231,7 @@ draco_tui_checklist() {
 draco_tui_main() {
     draco_tui_detect
     draco_tui_apply_theme
+    trap draco_tui_restore_palette EXIT
     clear
 
     while true; do
@@ -415,7 +248,7 @@ draco_tui_main() {
             "SCHEDULE" "Manage automatic schedule" \
             "CONFIG"   "Configure DRACO settings" \
             "ABOUT"    "About DRACO" \
-        )" || { clear; exit 0; }
+        )" || { clear; draco_tui_restore_palette; exit 0; }
 
         case "$choice" in
             BACKUP)   draco_tui_backup ;;
@@ -463,7 +296,6 @@ draco_tui_list() {
 
 # ─── Log screen ───────────────────────────────────────────────────────────────
 draco_tui_log() {
-    # Select backup
     local backups=()
     while IFS= read -r f; do
         local bid
@@ -514,7 +346,6 @@ draco_tui_delete() {
         return
     fi
 
-    # Confirm
     local count
     count="$(echo "$selected" | wc -w)"
     if draco_tui_yesno "DRACO - Confirm Delete" "Delete $count backup(s)?\n\nThis cannot be undone."; then
@@ -604,17 +435,17 @@ draco_tui_config() {
             DAILY)
                 local n
                 n="$(draco_tui_inputbox "Daily Retention" "Keep last N daily backups:" "$DRACO_RETENTION_KEEP_DAILY")"
-                [[ "$n" =~ ^[0-9]+$ ]] && DRACO_RETENTION_KEEP_DAILY="$n"
+                [[ "$n" =~ ^[0-9]+$ ]] && DRACO_RETENTION_KEEP_DAILY="$n" || true
                 ;;
             WEEKLY)
                 local n
                 n="$(draco_tui_inputbox "Weekly Retention" "Keep last N weekly backups:" "$DRACO_RETENTION_KEEP_WEEKLY")"
-                [[ "$n" =~ ^[0-9]+$ ]] && DRACO_RETENTION_KEEP_WEEKLY="$n"
+                [[ "$n" =~ ^[0-9]+$ ]] && DRACO_RETENTION_KEEP_WEEKLY="$n" || true
                 ;;
             MONTHLY)
                 local n
                 n="$(draco_tui_inputbox "Monthly Retention" "Keep last N monthly backups:" "$DRACO_RETENTION_KEEP_MONTHLY")"
-                [[ "$n" =~ ^[0-9]+$ ]] && DRACO_RETENTION_KEEP_MONTHLY="$n"
+                [[ "$n" =~ ^[0-9]+$ ]] && DRACO_RETENTION_KEEP_MONTHLY="$n" || true
                 ;;
             THEME)
                 local theme
