@@ -145,7 +145,7 @@ CONFIGURATION
        DRACO_SCHEDULE_TYPE    systemd | cron | none
        DRACO_SCHEDULE_FREQ    hourly | daily | weekly | monthly
        DRACO_SCHEDULE_TIME    HH:MM, default: 02:00
-       DRACO_TUI_THEME        default | blue | anthropic | eva01 | matrix
+       DRACO_TUI_THEME        ghost | blood | acid | matrix | void
 
 ENVIRONMENT
        DRACO_PASSWORD    Encryption password (no prompt when set)
@@ -173,11 +173,14 @@ FILES
               Systemd user units (created by 'draco schedule install').
 
 TUI THEMES
-       default     Plain black and white
-       blue        Classic blue and white sysadmin style
-       anthropic   Coral/red on dark (Anthropic brand)
-       eva01       Purple and green on black (Evangelion Unit-01)
-       matrix      Green on black (The Matrix)
+       Native bash TUI with ANSI 256-color (range 16-255 only).
+       whiptail/dialog used only for text input dialogs.
+
+       ghost       White on near-black  (fg=255 bg=232)
+       blood       Red on near-black    (fg=196 bg=232)
+       acid        Yellow on near-black (fg=226 bg=232)
+       matrix      Green on near-black  (fg=46  bg=232)
+       void        Cyan on near-black   (fg=51  bg=232)
 
 RETENTION POLICIES
        all      Keep all backups. Disk grows indefinitely.
@@ -237,7 +240,7 @@ SECURITY NOTES
 DEPENDENCIES
        Required:  bash (4.0+), tar, openssl, sha256sum, find, grep, sed,
                   awk, date
-       Recommended: zstd, whiptail or dialog
+       Recommended: zstd, whiptail or dialog (input dialogs only; TUI is native bash)
        Optional:  dnf, apt, pacman, zypper, flatpak, snap, pip3, npm
 
 LICENSE

@@ -164,11 +164,14 @@ Cron:
  9. TUI THEMES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  default     Plain black and white (max compatibility)
-  blue        Classic blue/white sysadmin style
-  anthropic   Coral/red on dark (Anthropic brand colors)
-  eva01       Purple and green on black (Evangelion Unit-01)
-  matrix      Green on black (The Matrix)
+  Native bash TUI with ANSI 256-color (uses color range 16-255 only).
+  whiptail/dialog used only for text input dialogs.
+
+  ghost       White on near-black  (fg=255 bg=232)
+  blood       Red on near-black    (fg=196 bg=232)
+  acid        Yellow on near-black (fg=226 bg=232)
+  matrix      Green on near-black  (fg=46  bg=232)
+  void        Cyan on near-black   (fg=51  bg=232)
 
   Set: draco config → TUI theme
   Or:  DRACO_TUI_THEME=matrix draco

@@ -277,7 +277,7 @@ Time of day for non-hourly schedules, in HH:MM format. Default:
 .TP
 .B DRACO_TUI_THEME
 TUI color theme. One of:
-.BR default ", " blue ", " anthropic ", " eva01 ", " matrix .
+.BR ghost ", " blood ", " acid ", " matrix ", " void .
 
 .SH ENVIRONMENT
 .TP
@@ -338,27 +338,30 @@ Systemd user units (created by
 .BR "draco schedule install" ).
 
 .SH TUI THEMES
-DRACO's TUI supports five selectable color themes:
+DRACO's TUI is implemented in native bash with ANSI 256-color output
+(color range 16-255 only; range 0-15 is avoided as it is remapped by
+some terminals such as KDE Konsole). whiptail/dialog is used only for
+text input dialogs. Five themes are available:
 
 .TP
-.B default
-Plain black and white. Maximum compatibility with any terminal.
+.B ghost
+White on near-black (fg=255, bg=232).
 
 .TP
-.B blue
-Classic blue and white sysadmin style.
+.B blood
+Red on near-black (fg=196, bg=232).
 
 .TP
-.B anthropic
-Coral/red on dark background, inspired by Anthropic's brand colors.
-
-.TP
-.B eva01
-Purple and green on black, inspired by Evangelion Unit-01.
+.B acid
+Yellow on near-black (fg=226, bg=232).
 
 .TP
 .B matrix
-Green on black, inspired by The Matrix.
+Green on near-black (fg=46, bg=232).
+
+.TP
+.B void
+Cyan on near-black (fg=51, bg=232).
 
 .SH RETENTION POLICIES
 .TP
@@ -462,7 +465,7 @@ Required (present in virtually all Linux distributions):
 
 .TP
 Optional but strongly recommended:
-.BR zstd " (compression), " whiptail " or " dialog " (TUI)"
+.BR zstd " (compression), " whiptail " or " dialog " (input dialogs only — TUI is native bash)"
 
 .TP
 Package detection (used only if present):
