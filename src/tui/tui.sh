@@ -690,14 +690,38 @@ draco_tui_log() {
     local selected
     selected="$(draco_tui_menu "DRACO - View Log" "Select backup:" 20 70 8 "${backups[@]}")" || return
 
+    local action
+    action="$(draco_tui_menu "DRACO - Log Actions" "Backup: $selected" 10 60 2 \
+        "LOG"  "View full backup log" \
+        "DIFF" "View diff vs previous backup" \
+    )" || return
+
     local tmp
     tmp="$(mktemp)"
-    if ! draco_backup_log_show "$selected" > "$tmp" 2>&1; then
-        rm -f "$tmp"
-        draco_tui_msgbox "DRACO - Log" "No log found for backup:\n$selected\n\nLogs only exist for backups\ncreated with this version of DRACO."
-        return
-    fi
-    draco_tui_textbox "DRACO - Log: $selected" "$tmp" 22 78
+
+    case "$action" in
+        LOG)
+            if ! draco_backup_log_show "$selected" > "$tmp" 2>&1; then
+                rm -f "$tmp"
+                draco_tui_msgbox "DRACO - Log" "No log found for backup:\n$selected\n\nLogs only exist for backups\ncreated with this version of DRACO."
+                return
+            fi
+            draco_tui_textbox "DRACO - Log: $selected" "$tmp"
+            ;;
+        DIFF)
+            local prev_id
+            prev_id="$(grep '^Previous backup' \
+                "${DRACO_BACKUP_DIR}/.meta/${selected}.log" 2>/dev/null \
+                | awk '{print $NF}')"
+            draco_manifest_diff \
+                "${DRACO_BACKUP_DIR}/.meta/${prev_id:-__none__}.manifest" \
+                "${DRACO_BACKUP_DIR}/.meta/${selected}.manifest" > "$tmp" 2>&1 || true
+            [[ -s "$tmp" ]] || echo "No diff data available." > "$tmp"
+            local prev_label="${prev_id:-none}"
+            draco_tui_textbox "DRACO - Diff: $selected vs $prev_label" "$tmp"
+            ;;
+    esac
+
     rm -f "$tmp"
 }
 

@@ -123,6 +123,7 @@ META
     | draco_encrypt "$pass" > "$final_archive"
 
     local tar_status="${PIPESTATUS[0]}"
+    draco_backup_write_manifest "$backup_id" "$staging"
     rm -rf "$staging"
 
     if [[ "$tar_status" -ne 0 ]]; then
@@ -270,7 +271,7 @@ draco_backup_kde() {
 
     # Konsole profiles
     if [[ -d "${HOME}/.local/share/konsole" ]]; then
-        cp -r "${HOME}/.local/share/konsole" "${staging}/konsole" 2>/dev/null || true
+        cp -rp "${HOME}/.local/share/konsole" "${staging}/konsole" 2>/dev/null || true
         draco_backup_log_write "$backup_id" "  + Konsole profiles"
     fi
 
@@ -278,29 +279,29 @@ draco_backup_kde() {
     local spaceship_zsh="${HOME}/.oh-my-zsh/custom/themes/spaceship-prompt"
     local spaceship_config="${HOME}/.config/spaceship"
     if [[ -d "$spaceship_zsh" ]]; then
-        cp -r "$spaceship_zsh" "${staging}/spaceship-prompt" 2>/dev/null || true
+        cp -rp "$spaceship_zsh" "${staging}/spaceship-prompt" 2>/dev/null || true
         draco_backup_log_write "$backup_id" "  + Spaceship prompt theme"
     fi
     if [[ -d "$spaceship_config" ]]; then
         mkdir -p "${staging}/spaceship-config"
-        cp -r "$spaceship_config/." "${staging}/spaceship-config/" 2>/dev/null || true
+        cp -rp "$spaceship_config/." "${staging}/spaceship-config/" 2>/dev/null || true
     fi
 
     # KDE color schemes
     if [[ -d "${HOME}/.local/share/color-schemes" ]]; then
-        cp -r "${HOME}/.local/share/color-schemes" "${staging}/color-schemes" 2>/dev/null || true
+        cp -rp "${HOME}/.local/share/color-schemes" "${staging}/color-schemes" 2>/dev/null || true
         draco_backup_log_write "$backup_id" "  + KDE color schemes"
     fi
 
     # Plasma themes
     if [[ -d "${HOME}/.local/share/plasma" ]]; then
-        cp -r "${HOME}/.local/share/plasma" "${staging}/plasma" 2>/dev/null || true
+        cp -rp "${HOME}/.local/share/plasma" "${staging}/plasma" 2>/dev/null || true
         draco_backup_log_write "$backup_id" "  + Plasma themes"
     fi
 
     # Aurorae window decorations
     if [[ -d "${HOME}/.local/share/aurorae" ]]; then
-        cp -r "${HOME}/.local/share/aurorae" "${staging}/aurorae" 2>/dev/null || true
+        cp -rp "${HOME}/.local/share/aurorae" "${staging}/aurorae" 2>/dev/null || true
         draco_backup_log_write "$backup_id" "  + Aurorae decorations"
     fi
 
@@ -341,14 +342,14 @@ draco_backup_gnome() {
 
     # GNOME extensions
     if [[ -d "${HOME}/.local/share/gnome-shell/extensions" ]]; then
-        cp -r "${HOME}/.local/share/gnome-shell/extensions" "${staging}/gnome-extensions" 2>/dev/null || true
+        cp -rp "${HOME}/.local/share/gnome-shell/extensions" "${staging}/gnome-extensions" 2>/dev/null || true
         draco_backup_log_write "$backup_id" "  + GNOME extensions"
     fi
 
     # GTK themes/icons
     for d in ".themes" ".icons"; do
         if [[ -d "${HOME}/${d}" ]]; then
-            cp -r "${HOME}/${d}" "${staging}/${d}" 2>/dev/null || true
+            cp -rp "${HOME}/${d}" "${staging}/${d}" 2>/dev/null || true
             draco_backup_log_write "$backup_id" "  + ${d}"
         fi
     done
@@ -399,26 +400,98 @@ draco_backup_generate_diff_log() {
             } >> "$log_file"
         fi
 
-        # Diff package lists if available
-        local new_pkg_tmp prev_pkg_tmp
-        new_pkg_tmp="$(mktemp)"
-        prev_pkg_tmp="$(mktemp)"
-
-        draco_list_packages > "$new_pkg_tmp" 2>/dev/null || true
-
-        # Try to extract prev packages list (best effort - would need full extract)
-        # For now: log current state only, diff on next run
         {
-            echo "=== PACKAGE DIFF (vs $prev_id) ==="
-            echo "(Full diff requires extracting previous archive)"
-            echo "Current package count: $(wc -l < "$new_pkg_tmp")"
+            echo "=== FILE DIFF (vs $prev_id) ==="
+            draco_manifest_diff \
+                "${DRACO_BACKUP_DIR}/.meta/${prev_id}.manifest" \
+                "${DRACO_BACKUP_DIR}/.meta/${new_id}.manifest"
             echo ""
         } >> "$log_file"
-
-        rm -f "$new_pkg_tmp" "$prev_pkg_tmp"
     fi
 
     echo "Log: $log_file"
+}
+
+# ─── Manifest: write file list from staging dir ──────────────────────────────
+draco_backup_write_manifest() {
+    local backup_id="$1"
+    local staging_dir="$2"
+    local manifest_file="${DRACO_BACKUP_DIR}/.meta/${backup_id}.manifest"
+
+    mkdir -p "${DRACO_BACKUP_DIR}/.meta"
+    while IFS= read -r f; do
+        local rel="${f#${staging_dir}/}"
+        [[ "$rel" == pkgs/* ]] && continue  # auto-generated, always differs
+        local size mtime
+        size="$(stat -c '%s' "$f" 2>/dev/null || echo 0)"
+        mtime="$(stat -c '%Y' "$f" 2>/dev/null || echo 0)"
+        printf '%s\t%s\t%s\n' "$rel" "$size" "$mtime"
+    done < <(find "$staging_dir" -type f | sort) > "$manifest_file"
+}
+
+# ─── Manifest: diff two backup manifests ──────────────────────────────────────
+draco_manifest_diff() {
+    local old_manifest="$1"
+    local new_manifest="$2"
+
+    if [[ ! -f "$old_manifest" ]]; then
+        echo "No manifest for previous backup."
+        echo "(Manifests are generated from this version of DRACO onwards.)"
+        return 0
+    fi
+    if [[ ! -f "$new_manifest" ]]; then
+        echo "No manifest for this backup."
+        return 0
+    fi
+
+    local -A old_map=()
+    while IFS=$'\t' read -r path size mtime; do
+        old_map["$path"]="${size}:${mtime}"
+    done < "$old_manifest"
+
+    local -a added=() modified=()
+    local -A new_seen=()
+    while IFS=$'\t' read -r path size mtime; do
+        new_seen["$path"]=1
+        if [[ -z "${old_map[$path]+_}" ]]; then
+            added+=("$path")
+        elif [[ "${old_map[$path]}" != "${size}:${mtime}" ]]; then
+            modified+=("$path")
+        fi
+    done < "$new_manifest"
+
+    local -a removed=()
+    local p
+    for p in "${!old_map[@]}"; do
+        [[ -z "${new_seen[$p]+_}" ]] && removed+=("$p") || true
+    done
+
+    local n_a=${#added[@]} n_r=${#removed[@]} n_m=${#modified[@]}
+    local total=$(( n_a + n_r + n_m ))
+
+    if [[ $total -eq 0 ]]; then
+        echo "No file changes detected."
+        return 0
+    fi
+
+    echo "Summary: +${n_a} added  -${n_r} removed  ~${n_m} modified"
+    echo ""
+
+    if [[ $n_a -gt 0 ]]; then
+        echo "─── ADDED (${n_a}) ───"
+        printf '  + %s\n' "${added[@]}"
+        echo ""
+    fi
+    if [[ $n_r -gt 0 ]]; then
+        echo "─── REMOVED (${n_r}) ───"
+        printf '  - %s\n' "${removed[@]}"
+        echo ""
+    fi
+    if [[ $n_m -gt 0 ]]; then
+        echo "─── MODIFIED (${n_m}) ───"
+        printf '  ~ %s\n' "${modified[@]}"
+        echo ""
+    fi
 }
 
 # ─── Helper: find backup file by ID ───────────────────────────────────────────
@@ -557,4 +630,5 @@ draco_backup_delete_silent() {
     done
     rm -f "${DRACO_BACKUP_DIR}/.meta/${bid}.log"
     rm -f "${DRACO_BACKUP_DIR}/.meta/${bid}.meta"
+    rm -f "${DRACO_BACKUP_DIR}/.meta/${bid}.manifest"
 }
