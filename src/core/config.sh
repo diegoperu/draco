@@ -13,7 +13,7 @@ DRACO_BACKUP_DIR=""           # Set by user - required
 DRACO_ENCRYPTION_ALGO="aes-256-cbc"
 DRACO_COMPRESSION="zstd"
 DRACO_COMPRESSION_LEVEL=6
-DRACO_PASSWORD=""             # Set at runtime
+DRACO_PASSWORD="${DRACO_PASSWORD:-}"  # Set at runtime; env var takes precedence
 
 # Retention defaults
 DRACO_RETENTION_KEEP_DAILY=7
