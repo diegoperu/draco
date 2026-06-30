@@ -677,7 +677,7 @@ draco_tui_log() {
     local -a backups=()
     while IFS= read -r f; do
         local bid dt
-        bid="$(basename "$f" | sed 's/draco-\(.*\)\..*/\1/')"
+        bid="$(basename "$f" | sed 's/^draco-//;s/\..*//')"
         dt="$(stat -c '%y' "$f" 2>/dev/null | cut -d'.' -f1 || echo '')"
         backups+=("$bid" "$dt")
     done < <(find "$DRACO_BACKUP_DIR" -maxdepth 1 -name "draco-*.enc" 2>/dev/null | sort -r)
@@ -692,7 +692,11 @@ draco_tui_log() {
 
     local tmp
     tmp="$(mktemp)"
-    draco_backup_log_show "$selected" > "$tmp" 2>&1
+    if ! draco_backup_log_show "$selected" > "$tmp" 2>&1; then
+        rm -f "$tmp"
+        draco_tui_msgbox "DRACO - Log" "No log found for backup:\n$selected\n\nLogs only exist for backups\ncreated with this version of DRACO."
+        return
+    fi
     draco_tui_textbox "DRACO - Log: $selected" "$tmp" 22 78
     rm -f "$tmp"
 }
@@ -702,7 +706,7 @@ draco_tui_delete() {
     local -a items=()
     while IFS= read -r f; do
         local bid sz
-        bid="$(basename "$f" | sed 's/draco-\(.*\)\..*/\1/')"
+        bid="$(basename "$f" | sed 's/^draco-//;s/\..*//')"
         sz="$(draco_human_size "$f")"
         items+=("$bid" "$sz" "OFF")
     done < <(find "$DRACO_BACKUP_DIR" -maxdepth 1 -name "draco-*.enc" 2>/dev/null | sort -r)

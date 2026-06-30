@@ -242,7 +242,7 @@ draco_backup_list() {
         local base
         base="$(basename "$f")"
         local bid
-        bid="$(echo "$base" | sed 's/draco-\(.*\)\..*/\1/')"
+        bid="$(echo "$base" | sed 's/^draco-//;s/\..*//')"
         local sz
         sz="$(draco_human_size "$f")"
         local dt

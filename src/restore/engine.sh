@@ -321,7 +321,7 @@ draco_restore_select_interactive() {
     local backups=()
     while IFS= read -r f; do
         local bid
-        bid="$(basename "$f" | sed 's/draco-\(.*\)\..*/\1/')"
+        bid="$(basename "$f" | sed 's/^draco-//;s/\..*//')"
         local sz
         sz="$(draco_human_size "$f")"
         local dt

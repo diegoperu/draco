@@ -49,6 +49,9 @@ NON è un backup dati utente — solo configurazioni e software manifest.
 - `draco_log_init`: aggiungere `|| true` alla fine — l'ultima riga `[[ ... ]] && VAR=x` ritorna 1 con set -e se la condizione è falsa, causando exit silenzioso prima della TUI
 - `draco_status`: chiamare `draco_detect_distro` e `draco_detect_de` prima di stampare
 - TUI temi: MAI usare colori ANSI 0-15 (rimappati da Konsole) — usare solo range 16-255
+- **BID extraction (CRITICO)**: usare SEMPRE `sed 's/^draco-//;s/\..*//'` per estrarre backup ID da filename — MAI `sed 's/draco-\(.*\)\..*/\1/'` (greedy: estrae `20260512-093002.tar.zst` invece di `20260512-093002`, lookup `.meta/` fallisce → exit silenzioso)
+- **Log ordinamento**: header del log scritto in `draco_backup_run` con `>` (crea file) PRIMA di chiamare `draco_backup_dotfiles`/`draco_backup_kde`/`draco_backup_gnome` che appendono con `>>`. `draco_backup_generate_diff_log` appende solo il diff, NON l'header.
+- **Log location**: `${DRACO_BACKUP_DIR}/.meta/${backup_id}.log` — esterno all'archivio cifrato, leggibile dalla TUI. Se mancante: `draco_backup_log_show` ritorna 1 → wrappare con `if ! ...; then msgbox; return; fi`
 
 ## Distro target
 Fedora 42+, Debian 12+, Ubuntu 24.04+, Arch Linux

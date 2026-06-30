@@ -19,6 +19,20 @@ draco_backup_run() {
     local backup_id
     backup_id="$(draco_new_backup_id)"
 
+    # Write log header first so content sections append after it
+    local log_file="${DRACO_BACKUP_DIR}/.meta/${backup_id}.log"
+    {
+        echo "DRACO Backup Log"
+        echo "════════════════════════════════════════"
+        echo "Backup ID : $backup_id"
+        echo "Date      : $(date -Iseconds)"
+        echo "Distro    : ${DRACO_DISTRO} (${DRACO_DISTRO_FAMILY})"
+        echo "DE        : ${DRACO_DE}"
+        echo "Host      : $(hostname)"
+        echo "User      : ${USER}"
+        echo ""
+    } > "$log_file"
+
     draco_info "Starting backup: $backup_id"
     draco_info "Distro  : ${DRACO_DISTRO} (${DRACO_DISTRO_FAMILY})"
     draco_info "DE      : ${DRACO_DE}"
@@ -373,18 +387,6 @@ draco_backup_generate_diff_log() {
     local prev_id="${2:-}"
     local log_file="${DRACO_BACKUP_DIR}/.meta/${new_id}.log"
 
-    {
-        echo "DRACO Backup Log"
-        echo "════════════════════════════════════════"
-        echo "Backup ID : $new_id"
-        echo "Date      : $(date -Iseconds)"
-        echo "Distro    : ${DRACO_DISTRO} (${DRACO_DISTRO_FAMILY})"
-        echo "DE        : ${DRACO_DE}"
-        echo "Host      : $(hostname)"
-        echo "User      : ${USER}"
-        echo ""
-    } >> "$log_file"
-
     if [[ -n "$prev_id" ]]; then
         local prev_meta="${DRACO_BACKUP_DIR}/.meta/${prev_id}.meta"
         if [[ -f "$prev_meta" ]]; then
@@ -440,7 +442,7 @@ draco_get_last_backup_id_before() {
     | grep -v "draco-${current_id}" \
     | tail -1 \
     | xargs -r basename \
-    | sed 's/draco-\(.*\)\..*/\1/' \
+    | sed 's/^draco-//;s/\..*//' \
     2>/dev/null || echo ""
 }
 
@@ -474,7 +476,7 @@ draco_retention_keep_n_per_period() {
     local all_ids=()
     while IFS= read -r f; do
         local bid
-        bid="$(basename "$f" | sed 's/draco-\(.*\)\..*/\1/')"
+        bid="$(basename "$f" | sed 's/^draco-//;s/\..*//')"
         all_ids+=("$bid")
     done < <(find "$DRACO_BACKUP_DIR" -maxdepth 1 -name "draco-*.enc" ! -type l | sort -r)
 
@@ -494,7 +496,7 @@ draco_retention_smart() {
     local all_ids=()
     while IFS= read -r f; do
         local bid
-        bid="$(basename "$f" | sed 's/draco-\(.*\)\..*/\1/')"
+        bid="$(basename "$f" | sed 's/^draco-//;s/\..*//')"
         all_ids+=("$bid")
     done < <(find "$DRACO_BACKUP_DIR" -maxdepth 1 -name "draco-*.enc" ! -type l | sort -r)
 
