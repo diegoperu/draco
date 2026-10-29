@@ -24,6 +24,7 @@ NON è un backup dati utente — solo configurazioni e software manifest.
 - Tutti i file `.sh` in `src/` sono SOURCED da `draco`, non eseguiti direttamente
 - Variabili con `:-` default ovunque: `${VAR:-default}` mai `$VAR` nudo
 - Dopo ogni modifica: `bash -n src/**/*.sh && bash -n draco`
+- Test sicurezza password: `bash tests/test_password.sh` (HOME isolata, nessun root)
 
 ### Struttura moduli
 - `src/core/config.sh`         — config, first-run, wizard, draco_status
@@ -58,6 +59,7 @@ NON è un backup dati utente — solo configurazioni e software manifest.
 - **Password prompt (CRITICO)**: `draco_get_password`/`draco_prompt_password_only` sono chiamate in `$(...)`: l'`echo` dopo `read -s` va SEMPRE su stderr (`echo >&2`). Prima finiva su stdout → backup cifrati con `\n\n+pass`, restore con `\n+pass` → `bad decrypt` (2026-10-29). Backup legacy ancora apribili: `draco_restore_extract` prova pass pulita, poi `\n+pass`, `\n\n+pass` (rimuovere quando non esistono più backup vecchi)
 - **Password in argv (CWE-214)**: MAI `openssl -pass pass:"$pass"` (visibile in `ps`). `draco_encrypt`/`draco_decrypt` usano `-pass env:DRACO_OSSL_PASS` con la variabile impostata solo per il processo openssl. NON usare `fd:`/`file:` (leggono solo la prima riga → rompono il fallback legacy con `\n`). Compatibile coi file cifrati col vecchio metodo (2026-10-29)
 - **Restore e compressione (CRITICO)**: GNU tar NON riconosce zstd da pipe (`decrypt | tar -xf -` → "L'archivio è compresso. Usare l'opzione --zstd"). Il restore deve passare il flag da `draco_tar_extract_flag` (estensione del file `.tar.zst.enc` → `--zstd`, ecc.). Mai nascondere gli errori con `2>/dev/null` senza distinguere password sbagliata (rc1) da estrazione fallita (rc2) in `draco_restore_extract` (2026-10-29). `draco_extract_archive` in utils.sh è codice morto e senza flag: non usarla
+- **Password mai in argv (CWE-214)**: `-p/--password` RIMOSSA (errore esplicito). Fonti ammesse: prompt, `DRACO_PASSWORD`, `--password-file F` / `DRACO_PASSWORD_FILE` (regular file, no symlink, proprietario = utente, modo 600/400, prima riga, max 1024, no CR — `draco_read_password_file`). Priorità: env > --password-file > DRACO_PASSWORD_FILE > prompt; il file è letto solo per backup/restore/TUI. `draco schedule install` crea `~/.config/draco/password` (0600, dir 0700, mai nei backup) e verifica la password sull'ultimo backup; service systemd usa `Environment=DRACO_PASSWORD_FILE=` (mai `DRACO_PASSWORD=%i`), cron usa `--password-file`. Il path va in unit/crontab: whitelist `[A-Za-z0-9_./-]` (2026-10-29)
 - **TUI → motore**: `draco_tui_*` che chiamano `draco_restore_run_with_id`/simili devono prima fare `draco_check_deps; draco_detect_distro; draco_detect_de` (la TUI non li esegue; `DRACO_TUI_AVAILABLE` e `DRACO_DE` altrimenti non sono impostati). La selezione backup in TUI usa `draco_tui_menu` nativo, mai whiptail
 - **Log location**: `${DRACO_BACKUP_DIR}/.meta/${backup_id}.log` — esterno all'archivio cifrato, leggibile dalla TUI. Se mancante: `draco_backup_log_show` ritorna 1 → wrappare con `if ! ...; then msgbox; return; fi`
 

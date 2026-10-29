@@ -217,21 +217,18 @@ draco schedule install
 # Sceglie: systemd, giornaliero, 02:00
 ```
 
-Configurare la password per l'esecuzione non presidiata:
-
-```bash
-mkdir -p ~/.config/environment.d
-echo 'DRACO_PASSWORD=tuapassword' > ~/.config/environment.d/draco.conf
-chmod 600 ~/.config/environment.d/draco.conf
-```
+`draco schedule install` chiede la password una sola volta e la salva in
+`~/.config/draco/password` (permessi 600, non inclusa nei backup). Il service
+la legge tramite `DRACO_PASSWORD_FILE`: la password non compare mai in `ps`,
+nei file unit o nel crontab. Usa la STESSA password dei backup esistenti
+(l'installer prova a verificarla sull'ultimo backup).
 
 ### Cron
 
 ```bash
-draco schedule install   # sceglie cron
+draco schedule install   # sceglie cron; usa lo stesso file password (600)
 # oppure manualmente in crontab:
-DRACO_PASSWORD=tuapassword
-0 2 * * * /home/utente/.local/bin/draco backup -q
+0 2 * * * /home/utente/.local/bin/draco backup -q --password-file ~/.config/draco/password
 ```
 
 ### Verifica schedule
@@ -321,7 +318,7 @@ DRACO_RETENTION_KEEP_YEARLY=3
 chmod 700 $DRACO_BACKUP_DIR
 ```
 
-- Per l'automazione, usa `~/.config/environment.d/draco.conf` con `chmod 600`
+- Per l'automazione usa `~/.config/draco/password` (`chmod 600`, creato da `draco schedule install`) con `--password-file` / `DRACO_PASSWORD_FILE`
 - **Non usare mai `-p password`** dalla CLI in ambienti condivisi (la password appare in `ps aux`)
 
 ---
@@ -416,6 +413,7 @@ Lista pacchetti di sistema, Flatpak, Snap, pip (user), npm globals + reinstall s
 | Variabile | Descrizione |
 |-----------|-------------|
 | `DRACO_PASSWORD` | Password cifratura (nessun prompt se impostata) |
+| `DRACO_PASSWORD_FILE` | File con la password (prima riga, permessi 600/400, tuo, non symlink). Equivale a `--password-file FILE` |
 | `DRACO_CONFIG` | Override percorso config file |
 | `DRACO_BACKUP_DIR` | Override directory backup (priorità massima) |
 | `DRACO_LOG_LEVEL` | `0`=DEBUG `1`=INFO `2`=WARN `3`=ERROR |

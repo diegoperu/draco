@@ -59,9 +59,9 @@ Install DRACO:
     2. Whether to install automatic scheduling
 
   ⚠ NEVER store your password in draco.conf.
-    Use: export DRACO_PASSWORD=yourpassword
-    Or:  echo 'DRACO_PASSWORD=yourpassword' > ~/.config/environment.d/draco.conf
-         chmod 600 ~/.config/environment.d/draco.conf
+    Use: the interactive prompt, or export DRACO_PASSWORD=yourpassword
+    Or:  a password file (mode 600): draco --password-file FILE ...
+         (created automatically by: draco schedule install)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  4. COMMAND REFERENCE
@@ -88,7 +88,7 @@ Install DRACO:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   -c FILE   --config FILE      Use alternate config file
-  -p PWD    --password PWD     Set password on CLI
+            --password-file F  Read password from file F (mode 600)
   -q        --quiet            Suppress non-error output (for cron)
   -v        --verbose          Debug output
             --no-color         Disable color output
@@ -97,6 +97,7 @@ Install DRACO:
 
   Environment variables:
     DRACO_PASSWORD=xxx         Encryption password (no prompt)
+    DRACO_PASSWORD_FILE=path   File with the password (mode 600)
     DRACO_CONFIG=path          Override config file path
     DRACO_BACKUP_DIR=path      Override backup directory
     DRACO_LOG_LEVEL=0-3        0=DEBUG 1=INFO 2=WARN 3=ERROR
@@ -109,10 +110,8 @@ Systemd user timer (recommended):
   draco schedule install
   # Choose: systemd, daily, 02:00
 
-  # Store password for unattended use:
-  mkdir -p ~/.config/environment.d
-  echo 'DRACO_PASSWORD=yourpassword' > ~/.config/environment.d/draco.conf
-  chmod 600 ~/.config/environment.d/draco.conf
+  # The installer asks for the password once and stores it in
+  # ~/.config/draco/password (mode 600, not included in backups)
 
 Cron:
   draco schedule install
@@ -120,8 +119,7 @@ Cron:
 
   # Or manually:
   crontab -e
-  DRACO_PASSWORD=yourpassword
-  0 2 * * * /home/user/.local/bin/draco backup -q >> ~/.local/share/draco/logs/cron.log 2>&1
+  0 2 * * * /home/user/.local/bin/draco backup -q --password-file ~/.config/draco/password >> ~/.local/share/draco/logs/cron.log 2>&1
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  7. RESTORE WORKFLOW (new machine or fresh install)
@@ -195,7 +193,7 @@ Cron:
   ✓ Use a strong password (12+ chars). It protects your SSH keys.
   ✓ NEVER store password in draco.conf.
   ✓ chmod 700 $DRACO_BACKUP_DIR
-  ✓ For systemd: store password in ~/.config/environment.d/draco.conf (chmod 600)
+  ✓ For unattended backups: ~/.config/draco/password (chmod 600, created by draco schedule install)
   ✓ Back up your password somewhere safe. Without it: unrecoverable.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

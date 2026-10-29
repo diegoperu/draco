@@ -30,6 +30,77 @@ draco_schedule_cmd() {
     esac
 }
 
+# ─── Password file for unattended backups ────────────────────────────────────
+# One mechanism for systemd and cron: a 0600 file read via DRACO_PASSWORD_FILE /
+# --password-file. The password never appears in argv, unit files or crontab.
+draco_schedule_setup_password_file() {
+    local pwfile="${1:-}"
+    local pass="" pass2="" tmp=""
+
+    # The path is embedded in the unit file / crontab line: whitelist it
+    if [[ ! "$pwfile" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
+        draco_error "Unsupported password file path (allowed: A-Z a-z 0-9 _ . / -): $pwfile"
+        return 1
+    fi
+
+    if [[ -e "$pwfile" || -L "$pwfile" ]]; then
+        if draco_read_password_file "$pwfile" >/dev/null; then
+            if draco_confirm "Password file $pwfile exists. Keep it?" "y"; then
+                return 0
+            fi
+        else
+            draco_warn "The existing password file is not usable (see above)."
+        fi
+        draco_confirm "Replace $pwfile?" "n" || return 1
+    fi
+
+    draco_info "Unattended backups need the backup password stored in $pwfile (mode 600)."
+    draco_info "Use the SAME password as your existing backups."
+    while true; do
+        read -r -s -p "Backup password: " pass || return 1
+        echo
+        read -r -s -p "Confirm password: " pass2 || return 1
+        echo
+        if [[ "$pass" != "$pass2" ]]; then
+            draco_warn "Passwords do not match. Try again."
+        elif [[ ${#pass} -lt 8 || ${#pass} -gt 1024 || "$pass" == *$'\r'* ]]; then
+            draco_warn "Password must be 8-1024 characters, without CR."
+        else
+            break
+        fi
+    done
+
+    # Non-blocking sanity check against the latest backup: a different password
+    # would silently produce backups that cannot be restored with the old one
+    local latest="" cand ok=0
+    if [[ -d "${DRACO_BACKUP_DIR:-}" ]]; then
+        latest="$(find "$DRACO_BACKUP_DIR" -maxdepth 1 -name 'draco-*.enc' 2>/dev/null | sort | tail -1)"
+    fi
+    if [[ -n "$latest" ]]; then
+        for cand in "$pass" $'\n'"$pass" $'\n\n'"$pass"; do
+            if draco_decrypt "$cand" < "$latest" >/dev/null 2>&1; then
+                ok=1
+                break
+            fi
+        done
+        if [[ "$ok" -eq 0 ]]; then
+            draco_warn "This password does NOT decrypt your latest backup: $(basename "$latest")"
+            draco_warn "Scheduled backups would use a different password than the existing ones."
+            draco_confirm "Save it anyway?" "n" || return 1
+        fi
+    fi
+
+    mkdir -p -m 700 -- "$(dirname "$pwfile")"
+    tmp="$(mktemp "${pwfile}.XXXXXX")"
+    if ! { printf '%s\n' "$pass" > "$tmp" && chmod 600 "$tmp" && mv -f -- "$tmp" "$pwfile"; }; then
+        rm -f -- "$tmp"
+        draco_error "Could not write password file: $pwfile"
+        return 1
+    fi
+    draco_ok "Password file written: $pwfile (mode 600)"
+    draco_warn "Anyone who can read this file can decrypt your backups. It is NOT included in backups."
+}
+
 # ─── Interactive install ───────────────────────────────────────────────────────
 draco_schedule_interactive_install() {
     draco_info "DRACO Schedule Installation"
@@ -95,14 +166,20 @@ draco_schedule_interactive_install() {
         time_val="${time_input:-02:00}"
     fi
 
+    local pwfile="${DRACO_CONFIG_DIR}/password"
+    if ! draco_schedule_setup_password_file "$pwfile"; then
+        draco_error "Schedule not installed: password file not set up."
+        return 1
+    fi
+
     DRACO_SCHEDULE_TYPE="$chosen_method"
     DRACO_SCHEDULE_FREQ="$freq"
     DRACO_SCHEDULE_TIME="$time_val"
     draco_save_config
 
     case "$chosen_method" in
-        systemd) draco_schedule_install_systemd "$freq" "$time_val" ;;
-        cron)    draco_schedule_install_cron    "$freq" "$time_val" ;;
+        systemd) draco_schedule_install_systemd "$freq" "$time_val" "$pwfile" ;;
+        cron)    draco_schedule_install_cron    "$freq" "$time_val" "$pwfile" ;;
     esac
 }
 
@@ -110,6 +187,7 @@ draco_schedule_interactive_install() {
 draco_schedule_install_systemd() {
     local freq="$1"
     local time_val="${2:-02:00}"
+    local pwfile="${3:-${DRACO_CONFIG_DIR}/password}"
     local systemd_dir="${HOME}/.config/systemd/user"
     local draco_bin
     draco_bin="$(realpath "$DRACO_SELF")"
@@ -127,7 +205,8 @@ Type=oneshot
 ExecStart=${draco_bin} backup --quiet
 StandardOutput=journal
 StandardError=journal
-Environment=DRACO_PASSWORD=%i
+Environment=DRACO_PASSWORD_FILE=${pwfile}
+NoNewPrivileges=yes
 EOF
 
     # Timer unit
@@ -173,15 +252,14 @@ EOF
     draco_info "  Timer   : ${systemd_dir}/draco-backup.timer"
     draco_info "  Schedule: $on_calendar"
     draco_info ""
-    draco_warn "NOTE: Set password via environment variable or the timer will prompt."
-    draco_warn "  Add to ~/.config/environment.d/draco.conf:"
-    draco_warn "    DRACO_PASSWORD=yourpassword"
+    draco_info "  Password: ${pwfile} (mode 600, read via DRACO_PASSWORD_FILE)"
 }
 
 # ─── Cron install ─────────────────────────────────────────────────────────────
 draco_schedule_install_cron() {
     local freq="$1"
     local time_val="${2:-02:00}"
+    local pwfile="${3:-${DRACO_CONFIG_DIR}/password}"
     local hour="${time_val%%:*}"
     local min="${time_val##*:}"
     local draco_bin
@@ -196,7 +274,7 @@ draco_schedule_install_cron() {
         *)       cron_expr="${min} ${hour} * * *" ;;
     esac
 
-    local cron_line="${cron_expr} ${draco_bin} backup --quiet >> \${HOME}/.local/share/draco/logs/cron.log 2>&1"
+    local cron_line="${cron_expr} ${draco_bin} backup --quiet --password-file ${pwfile} >> \${HOME}/.local/share/draco/logs/cron.log 2>&1"
     local tmp_cron
     tmp_cron="$(mktemp)"
 
@@ -209,9 +287,8 @@ draco_schedule_install_cron() {
 
     draco_ok "Cron job installed"
     draco_info "  Schedule: $cron_expr"
-    draco_info "  Command : $draco_bin backup --quiet"
-    draco_warn "NOTE: Set DRACO_PASSWORD in cron environment or it will fail."
-    draco_warn "  Add to crontab: DRACO_PASSWORD=yourpassword"
+    draco_info "  Command : $draco_bin backup --quiet --password-file $pwfile"
+    draco_info "  Password: ${pwfile} (mode 600)"
 }
 
 # ─── Remove schedule ──────────────────────────────────────────────────────────

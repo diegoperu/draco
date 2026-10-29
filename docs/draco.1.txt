@@ -110,9 +110,12 @@ OPTIONS
        -c, --config FILE
               Use an alternate configuration file.
 
-       -p, --password PASSWORD
-              Provide the encryption password on the command line.
-              Prefer DRACO_PASSWORD env var for automation.
+       --password-file FILE
+              Read the encryption password from the first line of FILE.
+              FILE must be a regular file (not a symlink) owned by you with
+              mode 600 or 400. Use this for automation. The old -p /
+              --password option was removed: a password on the command line
+              is visible in the process list and in the shell history.
 
        -q, --quiet
               Suppress all output except errors. For cron/systemd use.
@@ -149,6 +152,9 @@ CONFIGURATION
 
 ENVIRONMENT
        DRACO_PASSWORD    Encryption password (no prompt when set)
+       DRACO_PASSWORD_FILE
+                         File holding the password (same rules as
+                         --password-file)
        DRACO_CONFIG      Override config file path
        DRACO_BACKUP_DIR  Override backup directory (highest priority)
        DRACO_LOG_LEVEL   0=DEBUG 1=INFO 2=WARN 3=ERROR
@@ -229,11 +235,14 @@ SECURITY NOTES
        in the backup. The encryption password is the sole protection. Use a
        strong password (minimum 12 characters recommended).
 
-       NEVER store the password in draco.conf. Use DRACO_PASSWORD env var.
+       NEVER store the password in draco.conf. Use the interactive prompt,
+       DRACO_PASSWORD or a password file.
 
-       For systemd user timer automation, store password in
-       ~/.config/environment.d/draco.conf (mode 600):
-              DRACO_PASSWORD=your_strong_password
+       For unattended backups, "draco schedule install" stores the password
+       in ~/.config/draco/password (mode 600) and the systemd service / cron
+       job read it through DRACO_PASSWORD_FILE / --password-file. The password
+       never appears in the process list, unit files or crontab. The file is
+       not included in backups.
 
        The backup directory should have permissions 700.
 

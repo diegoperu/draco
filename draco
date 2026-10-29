@@ -53,7 +53,7 @@ COMMANDS:
 
 OPTIONS:
     -c, --config FILE   Use alternate config file
-    -p, --password PWD  Encryption password (or set DRACO_PASSWORD env var)
+    --password-file F   Read the encryption password from file F (mode 600)
     -q, --quiet         Suppress non-error output
     -v, --verbose       Verbose output
     --no-color          Disable color output
@@ -74,6 +74,7 @@ EXAMPLES:
 
 ENVIRONMENT:
     DRACO_PASSWORD      Encryption password (avoids prompt)
+    DRACO_PASSWORD_FILE File with the encryption password (mode 600, first line)
     DRACO_CONFIG        Path to config file
     DRACO_BACKUP_DIR    Override backup directory
 
@@ -90,7 +91,7 @@ parse_args() {
     DRACO_VERBOSE=0
     DRACO_NO_COLOR=0
     DRACO_ALT_CONFIG=""
-    DRACO_CLI_PASSWORD=""
+    DRACO_CLI_PASSWORD_FILE=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -106,7 +107,12 @@ parse_args() {
                 shift
                 ;;
             -p|--password)
-                DRACO_CLI_PASSWORD="${2:?'--password requires a value'}"
+                draco_error "Option $1 was removed: a password on the command line is visible in ps and shell history."
+                draco_error "Use the interactive prompt, DRACO_PASSWORD, or --password-file FILE."
+                exit 1
+                ;;
+            --password-file)
+                DRACO_CLI_PASSWORD_FILE="${2:?'--password-file requires a file path'}"
                 shift
                 ;;
             -q|--quiet)    DRACO_QUIET=1 ;;
@@ -141,8 +147,15 @@ main() {
     draco_load_config "${DRACO_ALT_CONFIG:-}"
 
     # Apply CLI overrides
-    [[ -n "$DRACO_CLI_PASSWORD" ]] && DRACO_PASSWORD="$DRACO_CLI_PASSWORD"
-    [[ -n "${DRACO_PASSWORD:-}" ]] || DRACO_PASSWORD="${DRACO_PASSWORD:-}"
+    # Password source priority: DRACO_PASSWORD env > --password-file > DRACO_PASSWORD_FILE > prompt
+    if [[ -z "${DRACO_PASSWORD:-}" && ( -z "$DRACO_CMD" || "$DRACO_CMD" =~ ^(backup|restore)$ ) ]]; then
+        if [[ -n "$DRACO_CLI_PASSWORD_FILE" ]]; then
+            DRACO_PASSWORD_FILE="$DRACO_CLI_PASSWORD_FILE"
+        fi
+        if [[ -n "${DRACO_PASSWORD_FILE:-}" ]]; then
+            DRACO_PASSWORD="$(draco_read_password_file "$DRACO_PASSWORD_FILE")" || exit 1
+        fi
+    fi
 
     # Init logging
     draco_log_init

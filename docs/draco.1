@@ -167,11 +167,14 @@ Use an alternate configuration file instead of the default
 .IR ~/.config/draco/draco.conf .
 
 .TP
-.BR \-p ", " \-\-password " " \fIPASSWORD\fR
-Provide the encryption password on the command line. This is convenient
-for scripting but exposes the password in the process list. Prefer the
-.B DRACO_PASSWORD
-environment variable for automated use.
+.BR \-\-password\-file " " \fIFILE\fR
+Read the encryption password from the first line of
+.IR FILE .
+The file must be a regular file (not a symlink) owned by the current user
+with mode 600 or 400. Use this for automated backups. The former
+.BR \-p / \-\-password
+option was removed because a password on the command line is visible in the
+process list and in the shell history.
 
 .TP
 .BR \-q ", " \-\-quiet
@@ -283,9 +286,13 @@ TUI color theme. One of:
 .TP
 .B DRACO_PASSWORD
 Encryption password. When set, DRACO will not prompt for a password.
-Recommended for automated/scheduled backups. Set in
-.B ~/.config/environment.d/draco.conf
-for systemd user services, or at the top of the crontab for cron jobs.
+
+.TP
+.B DRACO_PASSWORD_FILE
+File holding the password (same rules as
+.BR \-\-password\-file ).
+Used by the systemd service created by
+.BR "draco schedule install" .
 
 .TP
 .B DRACO_CONFIG
@@ -441,19 +448,20 @@ files. Use a strong password (minimum 12 characters recommended).
 
 Never store the password in the config file
 .RI ( ~/.config/draco/draco.conf ).
-Use the
+Enter it interactively, use the
 .B DRACO_PASSWORD
-environment variable or enter it interactively.
+environment variable, or a password file.
 
-For systemd user timer automated backups, store the password in
-.I ~/.config/environment.d/draco.conf
-with mode 600:
-
-.RS
-.nf
-DRACO_PASSWORD=your_strong_password
-.fi
-.RE
+For unattended backups,
+.B draco schedule install
+stores the password in
+.I ~/.config/draco/password
+(mode 600); the systemd service and the cron job read it through
+.B DRACO_PASSWORD_FILE
+or
+.BR \-\-password\-file .
+The password never appears in the process list, unit files or crontab, and
+the file is not included in backups.
 
 The backup directory should have restrictive permissions (700) to
 prevent other users from accessing encrypted archives.

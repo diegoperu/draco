@@ -73,6 +73,42 @@ draco_prompt_password_only() {
     echo "$DRACO_PASSWORD"
 }
 
+# ─── Password file (non-interactive use: systemd, cron, --password-file) ─────
+# Prints the first line of the file on stdout (called via $(...): errors go to
+# stderr only). Refuses symlinks, non-regular files, files not owned by the
+# current user and any file with group/other permissions (only 0400/0600).
+draco_read_password_file() {
+    local file="${1:-}"
+    local owner mode line=""
+
+    if [[ -z "$file" || "$file" == *$'\n'* ]]; then
+        draco_error "Password file path is empty or invalid."
+        return 1
+    fi
+    if [[ -L "$file" || ! -f "$file" ]]; then
+        draco_error "Password file missing or not a regular file: $file"
+        return 1
+    fi
+
+    owner="$(stat -c '%u' -- "$file" 2>/dev/null || true)"
+    mode="$(stat -c '%a' -- "$file" 2>/dev/null || true)"
+    if [[ "$owner" != "$EUID" ]]; then
+        draco_error "Password file must be owned by the current user: $file"
+        return 1
+    fi
+    if [[ ! "$mode" =~ ^(400|600)$ ]]; then
+        draco_error "Password file permissions are $mode, must be 600 or 400: chmod 600 '$file'"
+        return 1
+    fi
+
+    IFS= read -r line < "$file" || true
+    if [[ -z "$line" || ${#line} -gt 1024 || "$line" == *$'\r'* ]]; then
+        draco_error "Password file is empty, longer than 1024 chars or has CR characters: $file"
+        return 1
+    fi
+    printf '%s\n' "$line"
+}
+
 # ─── Encryption ───────────────────────────────────────────────────────────────
 # The password is passed to openssl via a per-process env var (-pass env:), never
 # in argv: `-pass pass:...` is world-readable via ps / /proc/PID/cmdline (CWE-214).
