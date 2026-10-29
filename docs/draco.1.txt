@@ -259,4 +259,4 @@ LICENSE
 SEE ALSO
        tar(1), openssl(1), systemctl(1), crontab(5), dconf(1)
 
-DRACO 1.0.3                      2026-05-08                          DRACO(1)
+DRACO 1.1.0                      2026-05-08                          DRACO(1)

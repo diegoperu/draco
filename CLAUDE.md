@@ -45,7 +45,7 @@ NON è un backup dati utente — solo configurazioni e software manifest.
 - `chore:` manutenzione, config
 
 ### Versione
-- Attuale: 1.0.3 (2026-10-29). Bump = `DRACO_VERSION` in `draco` + `README.md`, `docs/draco.1`, `docs/draco.1.txt`, `docs/draco-quickguide.txt`
+- Attuale: 1.1.0 (2026-10-29). Bump = `DRACO_VERSION` in `draco` + `README.md`, `docs/draco.1`, `docs/draco.1.txt`, `docs/draco-quickguide.txt`
 
 ### Bug noti risolti — NON reintrodurre
 - `_draco_colors_init`: usare `{ [[ -t 1 ]] && has_tty=1; } || true` — mai `[[ ! -t 1 && ... ]]`
