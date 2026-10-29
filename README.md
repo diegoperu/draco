@@ -163,7 +163,7 @@ draco
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  DRACO v1.0.0                                            │
+│  DRACO v1.0.1                                            │
 │  Dotfile & Runtime Archive and Configuration Orchestrator│
 │                                                          │
 │  Backup dir: /mnt/backup/draco                           │

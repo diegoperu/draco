@@ -1,6 +1,6 @@
 ╔══════════════════════════════════════════════════════════════════╗
 ║                                                                  ║
-║   DRACO  -  Quick Guide  -  v1.0.0                               ║
+║   DRACO  -  Quick Guide  -  v1.0.1                               ║
 ║   Dotfile & Runtime Archive and Configuration Orchestrator       ║
 ║                                                                  ║
 ║   Fedora 42+  |  Debian 12+  |  Ubuntu 24.04+  |  Arch          ║
@@ -210,5 +210,5 @@ Cron:
   • npm/pip/snap lists are best-effort only.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  DRACO v1.0.0  |  GNU GPL v3  |  AES-256-CBC + PBKDF2(600k iter)
+  DRACO v1.0.1  |  GNU GPL v3  |  AES-256-CBC + PBKDF2(600k iter)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
