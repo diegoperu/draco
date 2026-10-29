@@ -26,20 +26,33 @@ draco_restore_run() {
 # Decrypt+extract archive into staging. Tries the clean password first, then the
 # legacy encodings: backups made before 2026-10-29 via prompt were encrypted with
 # newline(s) prepended to the password (stdout-capture bug in the password prompt).
+# Returns: 0 ok | 1 decrypt failed (wrong password) | 2 decrypted but tar failed | 3 unknown archive type
 draco_restore_extract() {
     local pass="$1" archive="$2" staging="$3"
+    local tar_flag
+    tar_flag="$(draco_tar_extract_flag "$(basename "$archive")")" || return 3
+
     local -a candidates=("$pass" $'\n'"$pass" $'\n\n'"$pass")
-    local i
+    local -a rcs=()
+    local i decrypted=0
     for i in "${!candidates[@]}"; do
-        if draco_decrypt "${candidates[$i]}" < "$archive" 2>/dev/null \
-            | tar -C "$staging" -xf - 2>/dev/null; then
+        draco_decrypt "${candidates[$i]}" < "$archive" 2>/dev/null \
+            | tar -C "$staging" "$tar_flag" -xf - 2>/dev/null \
+            && rcs=(0 0) || rcs=("${PIPESTATUS[@]}")
+        if [[ "${rcs[0]}" -eq 0 && "${rcs[1]}" -eq 0 ]]; then
             if [[ "$i" -ne 0 ]]; then
                 draco_warn "Backup uses legacy password encoding. New backups are not affected."
             fi
             return 0
         fi
+        if [[ "${rcs[0]}" -eq 0 ]]; then
+            decrypted=1
+        fi
         find "$staging" -mindepth 1 -delete 2>/dev/null || true
     done
+    if [[ "$decrypted" -eq 1 ]]; then
+        return 2
+    fi
     return 1
 }
 
@@ -102,9 +115,15 @@ draco_restore_run_with_id() {
     local staging
     staging="$(mktemp -d)"
 
-    if ! draco_restore_extract "$pass" "$archive" "$staging"; then
+    local extract_rc=0
+    draco_restore_extract "$pass" "$archive" "$staging" || extract_rc=$?
+    if [[ "$extract_rc" -ne 0 ]]; then
         rm -rf "$staging"
-        draco_fatal "Failed to decrypt/extract archive. Wrong password?"
+        case "$extract_rc" in
+            2) draco_fatal "Archive decrypted but extraction failed (corrupt archive or missing decompressor)." ;;
+            3) draco_fatal "Unknown archive type: $(basename "$archive")" ;;
+            *) draco_fatal "Failed to decrypt archive. Wrong password?" ;;
+        esac
     fi
 
     draco_ok "Archive extracted successfully"

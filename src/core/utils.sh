@@ -114,6 +114,18 @@ draco_tar_compress_flag() {
     esac
 }
 
+# GNU tar cannot autodetect compression on a pipe (decrypt | tar -x): derive the
+# flag from the archive filename. Inverse of draco_compress_ext/draco_tar_compress_flag.
+draco_tar_extract_flag() {
+    case "${1:-}" in
+        *.tar.zst.enc) echo "--zstd" ;;
+        *.tar.gz.enc)  echo "-z" ;;
+        *.tar.bz2.enc) echo "-j" ;;
+        *.tar.xz.enc)  echo "-J" ;;
+        *) return 1 ;;
+    esac
+}
+
 # Create archive: draco_create_archive <output_file.tar.EXT.enc> <base_dir> <paths...>
 draco_create_archive() {
     local outfile="$1"
