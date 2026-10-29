@@ -342,15 +342,17 @@ draco_restore_select_interactive() {
             3>&1 1>&2 2>&3 || true)"
         echo "$selected"
     else
-        echo "Available backups:"
+        # stdout is captured by the caller ($(...)): UI goes to stderr, only the ID to stdout
+        echo "Available backups:" >&2
         local i=1
         local ids=()
+        local sel=""
         for ((j=0; j<${#backups[@]}; j+=2)); do
-            echo "  $i) ${backups[$j]} — ${backups[$j+1]}"
+            echo "  $i) ${backups[$j]} — ${backups[$j+1]}" >&2
             ids+=("${backups[$j]}")
             i=$((i+1))
         done
-        read -r -p "Select [1-${#ids[@]}] or Enter to cancel: " sel
+        read -r -p "Select [1-${#ids[@]}] or Enter to cancel: " sel || true
         if [[ "$sel" =~ ^[0-9]+$ && "$sel" -ge 1 && "$sel" -le "${#ids[@]}" ]]; then
             echo "${ids[$((sel-1))]}"
         fi

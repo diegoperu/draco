@@ -654,8 +654,27 @@ draco_tui_backup() {
 
 # ─── Restore screen ───────────────────────────────────────────────────────────
 draco_tui_restore() {
+    draco_check_deps
+    draco_detect_distro
+    draco_detect_de
+
+    local -a backups=()
+    while IFS= read -r f; do
+        local bid sz dt
+        bid="$(basename "$f" | sed 's/^draco-//;s/\..*//')"
+        sz="$(draco_human_size "$f")"
+        dt="$(stat -c '%y' "$f" 2>/dev/null | cut -d'.' -f1 || echo '')"
+        backups+=("$bid" "${sz} - ${dt}")
+    done < <(find "$DRACO_BACKUP_DIR" -maxdepth 1 -name "draco-*.enc" 2>/dev/null | sort -r)
+
+    if [[ ${#backups[@]} -eq 0 ]]; then
+        draco_tui_msgbox "DRACO - Restore" "No backups found."
+        return
+    fi
+
     local backup_id
-    backup_id="$(draco_restore_select_interactive)"
+    backup_id="$(draco_tui_menu "DRACO - Restore" "Select backup to restore:" 20 70 8 "${backups[@]}")" || return
+
     if [[ -n "$backup_id" ]]; then
         clear
         draco_restore_run_with_id "$backup_id"

@@ -51,6 +51,8 @@ NON è un backup dati utente — solo configurazioni e software manifest.
 - TUI temi: MAI usare colori ANSI 0-15 (rimappati da Konsole) — usare solo range 16-255
 - **BID extraction (CRITICO)**: usare SEMPRE `sed 's/^draco-//;s/\..*//'` per estrarre backup ID da filename — MAI `sed 's/draco-\(.*\)\..*/\1/'` (greedy: estrae `20260512-093002.tar.zst` invece di `20260512-093002`, lookup `.meta/` fallisce → exit silenzioso)
 - **Log ordinamento**: header del log scritto in `draco_backup_run` con `>` (crea file) PRIMA di chiamare `draco_backup_dotfiles`/`draco_backup_kde`/`draco_backup_gnome` che appendono con `>>`. `draco_backup_generate_diff_log` appende solo il diff, NON l'header.
+- **Funzioni chiamate in `$(...)`** (es. `draco_restore_select_interactive`): su stdout SOLO il valore di ritorno. Elenchi, prompt e messaggi UI vanno su stderr (`>&2`) — altrimenti finiscono nella variabile catturata (bug RESTORE: "Backup not found" + elenco, 2026-10-29)
+- **TUI → motore**: `draco_tui_*` che chiamano `draco_restore_run_with_id`/simili devono prima fare `draco_check_deps; draco_detect_distro; draco_detect_de` (la TUI non li esegue; `DRACO_TUI_AVAILABLE` e `DRACO_DE` altrimenti non sono impostati). La selezione backup in TUI usa `draco_tui_menu` nativo, mai whiptail
 - **Log location**: `${DRACO_BACKUP_DIR}/.meta/${backup_id}.log` — esterno all'archivio cifrato, leggibile dalla TUI. Se mancante: `draco_backup_log_show` ritorna 1 → wrappare con `if ! ...; then msgbox; return; fi`
 
 ## Distro target
