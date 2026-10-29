@@ -35,6 +35,7 @@ draco_check_deps() {
 
 # ─── Password handling ────────────────────────────────────────────────────────
 draco_get_password() {
+    # Called via $(...): stdout carries ONLY the password, UI goes to stderr
     # Priority: CLI arg > env var > prompt
     if [[ -n "${DRACO_PASSWORD:-}" ]]; then
         echo "$DRACO_PASSWORD"
@@ -44,9 +45,9 @@ draco_get_password() {
     local pass pass2
     while true; do
         read -r -s -p "Encryption password: " pass
-        echo
+        echo >&2
         read -r -s -p "Confirm password: " pass2
-        echo
+        echo >&2
         if [[ "$pass" == "$pass2" ]]; then
             if [[ ${#pass} -lt 8 ]]; then
                 draco_warn "Password too short (min 8 chars)"
@@ -67,7 +68,7 @@ draco_prompt_password_only() {
     fi
     local pass
     read -r -s -p "Backup password: " pass
-    echo
+    echo >&2
     DRACO_PASSWORD="$pass"
     echo "$DRACO_PASSWORD"
 }

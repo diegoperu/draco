@@ -23,6 +23,26 @@ draco_restore_run() {
     draco_restore_run_with_id "$backup_id"
 }
 
+# Decrypt+extract archive into staging. Tries the clean password first, then the
+# legacy encodings: backups made before 2026-10-29 via prompt were encrypted with
+# newline(s) prepended to the password (stdout-capture bug in the password prompt).
+draco_restore_extract() {
+    local pass="$1" archive="$2" staging="$3"
+    local -a candidates=("$pass" $'\n'"$pass" $'\n\n'"$pass")
+    local i
+    for i in "${!candidates[@]}"; do
+        if draco_decrypt "${candidates[$i]}" < "$archive" 2>/dev/null \
+            | tar -C "$staging" -xf - 2>/dev/null; then
+            if [[ "$i" -ne 0 ]]; then
+                draco_warn "Backup uses legacy password encoding. New backups are not affected."
+            fi
+            return 0
+        fi
+        find "$staging" -mindepth 1 -delete 2>/dev/null || true
+    done
+    return 1
+}
+
 draco_restore_run_with_id() {
     local backup_id="$1"
 
@@ -82,7 +102,7 @@ draco_restore_run_with_id() {
     local staging
     staging="$(mktemp -d)"
 
-    if ! draco_decrypt "$pass" < "$archive" | tar -C "$staging" -xf - 2>/dev/null; then
+    if ! draco_restore_extract "$pass" "$archive" "$staging"; then
         rm -rf "$staging"
         draco_fatal "Failed to decrypt/extract archive. Wrong password?"
     fi
