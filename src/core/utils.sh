@@ -74,21 +74,22 @@ draco_prompt_password_only() {
 }
 
 # ─── Encryption ───────────────────────────────────────────────────────────────
+# The password is passed to openssl via a per-process env var (-pass env:), never
+# in argv: `-pass pass:...` is world-readable via ps / /proc/PID/cmdline (CWE-214).
+# env: (unlike fd:/file:) keeps the full value, including newlines (legacy backups).
 draco_encrypt() {
     # Usage: draco_encrypt <password> < plaintext > ciphertext
-    local pass="$1"
-    openssl enc -"${DRACO_ENCRYPTION_ALGO}" \
+    DRACO_OSSL_PASS="${1:-}" openssl enc -"${DRACO_ENCRYPTION_ALGO}" \
         -pbkdf2 -iter 600000 \
-        -pass pass:"$pass" \
+        -pass env:DRACO_OSSL_PASS \
         -salt
 }
 
 draco_decrypt() {
     # Usage: draco_decrypt <password> < ciphertext > plaintext
-    local pass="$1"
-    openssl enc -d -"${DRACO_ENCRYPTION_ALGO}" \
+    DRACO_OSSL_PASS="${1:-}" openssl enc -d -"${DRACO_ENCRYPTION_ALGO}" \
         -pbkdf2 -iter 600000 \
-        -pass pass:"$pass" \
+        -pass env:DRACO_OSSL_PASS \
         -salt
 }
 
