@@ -44,7 +44,7 @@ NON è un backup dati utente — solo configurazioni e software manifest.
 - `chore:` manutenzione, config
 
 ### Versione
-- Attuale: 1.0.1 (2026-10-29). Bump = `DRACO_VERSION` in `draco` + `README.md`, `docs/draco.1`, `docs/draco.1.txt`, `docs/draco-quickguide.txt`
+- Attuale: 1.0.2 (2026-10-29). Bump = `DRACO_VERSION` in `draco` + `README.md`, `docs/draco.1`, `docs/draco.1.txt`, `docs/draco-quickguide.txt`
 
 ### Bug noti risolti — NON reintrodurre
 - `_draco_colors_init`: usare `{ [[ -t 1 ]] && has_tty=1; } || true` — mai `[[ ! -t 1 && ... ]]`
@@ -56,6 +56,7 @@ NON è un backup dati utente — solo configurazioni e software manifest.
 - **Log ordinamento**: header del log scritto in `draco_backup_run` con `>` (crea file) PRIMA di chiamare `draco_backup_dotfiles`/`draco_backup_kde`/`draco_backup_gnome` che appendono con `>>`. `draco_backup_generate_diff_log` appende solo il diff, NON l'header.
 - **Funzioni chiamate in `$(...)`** (es. `draco_restore_select_interactive`): su stdout SOLO il valore di ritorno. Elenchi, prompt e messaggi UI vanno su stderr (`>&2`) — altrimenti finiscono nella variabile catturata (bug RESTORE: "Backup not found" + elenco, 2026-10-29)
 - **Password prompt (CRITICO)**: `draco_get_password`/`draco_prompt_password_only` sono chiamate in `$(...)`: l'`echo` dopo `read -s` va SEMPRE su stderr (`echo >&2`). Prima finiva su stdout → backup cifrati con `\n\n+pass`, restore con `\n+pass` → `bad decrypt` (2026-10-29). Backup legacy ancora apribili: `draco_restore_extract` prova pass pulita, poi `\n+pass`, `\n\n+pass` (rimuovere quando non esistono più backup vecchi)
+- **Password in argv (CWE-214)**: MAI `openssl -pass pass:"$pass"` (visibile in `ps`). `draco_encrypt`/`draco_decrypt` usano `-pass env:DRACO_OSSL_PASS` con la variabile impostata solo per il processo openssl. NON usare `fd:`/`file:` (leggono solo la prima riga → rompono il fallback legacy con `\n`). Compatibile coi file cifrati col vecchio metodo (2026-10-29)
 - **TUI → motore**: `draco_tui_*` che chiamano `draco_restore_run_with_id`/simili devono prima fare `draco_check_deps; draco_detect_distro; draco_detect_de` (la TUI non li esegue; `DRACO_TUI_AVAILABLE` e `DRACO_DE` altrimenti non sono impostati). La selezione backup in TUI usa `draco_tui_menu` nativo, mai whiptail
 - **Log location**: `${DRACO_BACKUP_DIR}/.meta/${backup_id}.log` — esterno all'archivio cifrato, leggibile dalla TUI. Se mancante: `draco_backup_log_show` ritorna 1 → wrappare con `if ! ...; then msgbox; return; fi`
 
